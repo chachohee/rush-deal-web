@@ -29,10 +29,22 @@ export default function LoginPage() {
   const onSubmit = async (data: FormData) => {
     try {
       const res = await api.post("/api/v1/auth/login", data);
-      const { accessToken, userId, email, name, role } = res.data;
+      const { accessToken } = res.data as { accessToken: string };
+
+      // Save token so the /me request gets the Authorization header
+      localStorage.setItem("accessToken", accessToken);
+
+      // JWT payload: { sub: userId, email, role, ... }
+      const payload = JSON.parse(atob(accessToken.split(".")[1]));
+      const role: string = payload.role ?? "";
+
+      const meRes = await api.get("/api/v1/users/me");
+      const { userId, email, name } = meRes.data.data ?? meRes.data;
+
       setAuth(accessToken, { userId, email, name, role });
       router.push("/timedeals");
     } catch {
+      localStorage.removeItem("accessToken");
       setError("root", { message: "이메일 또는 비밀번호가 올바르지 않습니다" });
     }
   };

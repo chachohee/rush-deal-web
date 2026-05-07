@@ -1,7 +1,11 @@
 import axios from "axios";
 
+// 브라우저에서는 Next.js rewrites를 통해 프록시, SSR에서는 직접 호출
+const baseURL =
+  typeof window === "undefined" ? process.env.NEXT_PUBLIC_API_URL : "";
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  baseURL,
   headers: { "Content-Type": "application/json" },
   withCredentials: false,
 });
