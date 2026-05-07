@@ -1,0 +1,83 @@
+"use client";
+
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import api from "@/lib/axios";
+import { useAuthStore } from "@/store/authStore";
+
+const schema = z.object({
+  email: z.string().email("올바른 이메일을 입력해주세요"),
+  password: z.string().min(1, "비밀번호를 입력해주세요"),
+});
+
+type FormData = z.infer<typeof schema>;
+
+export default function LoginPage() {
+  const router = useRouter();
+  const setAuth = useAuthStore((s) => s.setAuth);
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+    setError,
+  } = useForm<FormData>({ resolver: zodResolver(schema) });
+
+  const onSubmit = async (data: FormData) => {
+    try {
+      const res = await api.post("/api/v1/auth/login", data);
+      const { accessToken, userId, email, name, role } = res.data;
+      setAuth(accessToken, { userId, email, name, role });
+      router.push("/timedeals");
+    } catch {
+      setError("root", { message: "이메일 또는 비밀번호가 올바르지 않습니다" });
+    }
+  };
+
+  return (
+    <main className="flex items-center justify-center min-h-screen bg-gray-50">
+      <div className="w-full max-w-sm bg-white rounded-2xl shadow p-8">
+        <h1 className="text-2xl font-bold text-center mb-6">⏰ Rush Deal</h1>
+        <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">이메일</label>
+            <input
+              {...register("email")}
+              type="email"
+              placeholder="example@email.com"
+              className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400"
+            />
+            {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
+          </div>
+          <div>
+            <label className="block text-sm font-medium mb-1">비밀번호</label>
+            <input
+              {...register("password")}
+              type="password"
+              placeholder="비밀번호"
+              className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400"
+            />
+            {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
+          </div>
+          {errors.root && <p className="text-red-500 text-sm text-center">{errors.root.message}</p>}
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full bg-orange-500 text-white py-2 rounded-lg font-semibold hover:bg-orange-600 transition disabled:opacity-50"
+          >
+            {isSubmitting ? "로그인 중..." : "로그인"}
+          </button>
+        </form>
+        <p className="text-center text-sm text-gray-500 mt-4">
+          계정이 없으신가요?{" "}
+          <Link href="/signup" className="text-orange-500 font-medium hover:underline">
+            회원가입
+          </Link>
+        </p>
+      </div>
+    </main>
+  );
+}
