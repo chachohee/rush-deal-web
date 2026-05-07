@@ -39,12 +39,16 @@ export default function Header() {
               내 주문
             </Link>
           )}
+          {user && (
+            <Link href="/mypage" className="text-gray-600 hover:text-orange-500 transition">
+              마이페이지
+            </Link>
+          )}
         </nav>
 
         <div className="flex items-center gap-3 text-sm">
           {user ? (
             <>
-              <span className="text-gray-500">{user.name}님</span>
               <button
                 onClick={handleLogout}
                 className="px-4 py-1.5 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition"
