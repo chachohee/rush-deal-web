@@ -44,6 +44,11 @@ export default function Header() {
               마이페이지
             </Link>
           )}
+          {user?.role === "MASTER" && (
+            <Link href="/admin" className="text-purple-600 hover:text-purple-700 transition font-semibold">
+              관리자
+            </Link>
+          )}
         </nav>
 
         <div className="flex items-center gap-3 text-sm">
