@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { useState } from "react";
 import api from "@/lib/axios";
 import { useAuthStore } from "@/store/authStore";
+import { useCountdown } from "@/hooks/useCountdown";
+import { useToast } from "@/components/ui/Toast";
 
 interface ShippingAddress {
   addressId: number;
@@ -23,6 +25,8 @@ export default function TimeDealDetailPage() {
   const user = useAuthStore((s) => s.user);
   const [queueToken, setQueueToken] = useState<string | null>(null);
   const [step, setStep] = useState<"detail" | "queue" | "order">("detail");
+  const [pointInput, setPointInput] = useState("");
+  const { toast } = useToast();
 
   const { data: deal, isLoading } = useQuery({
     queryKey: ["timedeal", id],
@@ -32,7 +36,6 @@ export default function TimeDealDetailPage() {
     },
   });
 
-  // 기본 배송지 조회
   const { data: addresses = [] } = useQuery<ShippingAddress[]>({
     queryKey: ["shipping-addresses"],
     queryFn: async () => {
@@ -42,9 +45,28 @@ export default function TimeDealDetailPage() {
     enabled: !!user,
   });
 
+  const { data: pointData } = useQuery<{ balance: number }>({
+    queryKey: ["point-balance"],
+    queryFn: async () => {
+      const res = await api.get("/api/v1/points/balance");
+      return res.data;
+    },
+    enabled: !!user,
+  });
+
+  const pointBalance = pointData?.balance ?? 0;
   const defaultAddress = addresses.find((a) => a.isDefault) ?? addresses[0] ?? null;
 
-  // 대기열 진입
+  const countdown = useCountdown(deal?.endAt ?? new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString());
+
+  const discountPrice: number = deal?.discountPrice ?? 0;
+  const pointUsed = Math.min(
+    Math.max(0, parseInt(pointInput || "0", 10) || 0),
+    pointBalance,
+    discountPrice
+  );
+  const finalAmount = Math.max(0, discountPrice - pointUsed);
+
   const enterQueue = useMutation({
     mutationFn: async () => {
       const res = await api.post("/api/v1/queues/enter", { productId: deal.productId });
@@ -53,10 +75,11 @@ export default function TimeDealDetailPage() {
     onSuccess: (data) => {
       setQueueToken(data.data?.tokenId);
       setStep("queue");
+      toast("대기열에 진입했습니다", "success");
     },
+    onError: () => toast("대기열 진입에 실패했습니다", "error"),
   });
 
-  // 대기 순위 조회
   const { data: rankData, refetch: checkRank } = useQuery({
     queryKey: ["queue-rank", id, queueToken],
     queryFn: async () => {
@@ -68,7 +91,6 @@ export default function TimeDealDetailPage() {
     enabled: false,
   });
 
-  // 주문 생성
   const createOrder = useMutation({
     mutationFn: async (quantity: number) => {
       const timeDealForOrder = await api.get(`/api/v1/timedeals/${id}/order`);
@@ -77,7 +99,7 @@ export default function TimeDealDetailPage() {
         "/api/v1/orders",
         {
           items: [{ timeDealStockId: stockId, quantity }],
-          pointUsed: 0,
+          pointUsed,
           shippingInfo: defaultAddress
             ? {
                 recipientName: defaultAddress.recipientName,
@@ -101,8 +123,10 @@ export default function TimeDealDetailPage() {
       return res.data;
     },
     onSuccess: (data) => {
+      toast("주문이 접수되었습니다", "success");
       router.push(`/orders/${data.data?.orderId}`);
     },
+    onError: () => toast("주문 생성에 실패했습니다", "error"),
   });
 
   if (isLoading) {
@@ -129,9 +153,16 @@ export default function TimeDealDetailPage() {
           }`}>
             {deal.status === "ACTIVE" ? "진행중" : deal.status}
           </span>
-          <span className="text-sm text-gray-400">
-            {new Date(deal.endAt).toLocaleString("ko-KR")} 마감
-          </span>
+          {deal.status === "ACTIVE" && !countdown.done ? (
+            <span className="text-sm font-mono font-semibold text-red-500">
+              {countdown.hours > 0 ? `${String(countdown.hours).padStart(2, "0")}:` : ""}
+              {String(countdown.minutes).padStart(2, "0")}:{String(countdown.seconds).padStart(2, "0")} 남음
+            </span>
+          ) : (
+            <span className="text-sm text-gray-400">
+              {new Date(deal.endAt).toLocaleString("ko-KR")} 마감
+            </span>
+          )}
         </div>
 
         <h1 className="text-2xl font-bold mb-2">{deal.title}</h1>
@@ -144,7 +175,6 @@ export default function TimeDealDetailPage() {
           <span className="text-sm text-gray-400">1인 최대 {deal.limitQuantity}개</span>
         </div>
 
-        {/* 배송지 미등록 안내 */}
         {step === "detail" && deal.status === "ACTIVE" && !defaultAddress && user && (
           <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700 flex items-center justify-between">
             <span>기본 배송지가 없어요</span>
@@ -179,12 +209,47 @@ export default function TimeDealDetailPage() {
                 </p>
               )}
             </div>
+
             {defaultAddress && (
               <div className="bg-gray-50 rounded-xl px-4 py-3 text-xs text-gray-500">
                 <span className="font-medium text-gray-700">배송지: </span>
                 {defaultAddress.addressBase} {defaultAddress.addressDetail}
               </div>
             )}
+
+            {/* 포인트 사용 */}
+            {rankData?.data?.status === "ACTIVE" && (
+              <div className="bg-gray-50 rounded-xl px-4 py-3">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-medium text-gray-700">포인트 사용</span>
+                  <span className="text-xs text-gray-400">
+                    보유 <span className="font-semibold text-gray-600">{pointBalance.toLocaleString()}</span>P
+                  </span>
+                </div>
+                <div className="flex gap-2">
+                  <input
+                    type="number"
+                    min={0}
+                    max={Math.min(pointBalance, discountPrice)}
+                    value={pointInput}
+                    onChange={(e) => setPointInput(e.target.value)}
+                    placeholder="0"
+                    className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-sky-400"
+                  />
+                  <button
+                    onClick={() => setPointInput(String(Math.min(pointBalance, discountPrice)))}
+                    className="px-3 py-2 text-xs font-medium text-sky-500 border border-sky-300 rounded-lg hover:bg-sky-50 transition whitespace-nowrap"
+                  >
+                    전액 사용
+                  </button>
+                </div>
+                <div className="flex justify-between mt-2 text-xs text-gray-400">
+                  <span>포인트 사용: -{pointUsed.toLocaleString()}P</span>
+                  <span>최종 결제: <span className="font-semibold text-sky-500">{finalAmount.toLocaleString()}원</span></span>
+                </div>
+              </div>
+            )}
+
             <div className="flex gap-2">
               <button
                 onClick={() => checkRank()}
@@ -198,7 +263,7 @@ export default function TimeDealDetailPage() {
                   disabled={createOrder.isPending}
                   className="flex-1 py-2.5 bg-sky-500 text-white rounded-xl font-semibold hover:bg-sky-600 transition disabled:opacity-50"
                 >
-                  {createOrder.isPending ? "주문 중..." : "주문하기 (1개)"}
+                  {createOrder.isPending ? "주문 중..." : `주문하기 (${finalAmount.toLocaleString()}원)`}
                 </button>
               )}
             </div>

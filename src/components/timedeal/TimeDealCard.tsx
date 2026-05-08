@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { useCountdown } from "@/hooks/useCountdown";
 
 const STATUS_STYLE: Record<string, { label: string; className: string }> = {
   ACTIVE:    { label: "진행중",   className: "bg-sky-500 text-white" },
@@ -6,6 +9,20 @@ const STATUS_STYLE: Record<string, { label: string; className: string }> = {
   SOLD_OUT:  { label: "품절",     className: "bg-gray-400 text-white" },
   ENDED:     { label: "마감",     className: "bg-gray-300 text-gray-600" },
 };
+
+function pad(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+function CountdownBadge({ targetIso, label }: { targetIso: string; label: string }) {
+  const { hours, minutes, seconds, done } = useCountdown(targetIso);
+  if (done) return null;
+  return (
+    <span className="text-xs font-mono text-gray-500">
+      {label} {hours > 0 ? `${pad(hours)}:` : ""}{pad(minutes)}:{pad(seconds)}
+    </span>
+  );
+}
 
 interface Props {
   deal: {
@@ -33,11 +50,19 @@ export default function TimeDealCard({ deal }: Props) {
         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${status.className}`}>
           {status.label}
         </span>
-        <span className="text-xs text-gray-400">
-          {new Date(deal.endAt).toLocaleDateString("ko-KR", {
-            month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
-          })} 마감
-        </span>
+        {deal.status === "ACTIVE" && (
+          <CountdownBadge targetIso={deal.endAt} label="종료까지" />
+        )}
+        {deal.status === "SCHEDULED" && (
+          <CountdownBadge targetIso={deal.startAt} label="시작까지" />
+        )}
+        {deal.status !== "ACTIVE" && deal.status !== "SCHEDULED" && (
+          <span className="text-xs text-gray-400">
+            {new Date(deal.endAt).toLocaleDateString("ko-KR", {
+              month: "short", day: "numeric", hour: "2-digit", minute: "2-digit",
+            })} 마감
+          </span>
+        )}
       </div>
 
       <div>

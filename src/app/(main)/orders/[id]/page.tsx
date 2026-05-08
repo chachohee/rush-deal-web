@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
 import api from "@/lib/axios";
+import { useToast } from "@/components/ui/Toast";
 
 const STATUS_LABEL: Record<string, string> = {
   PENDING: "주문접수", PENDING_PAYMENT: "결제대기", PAID: "결제완료",
@@ -13,6 +14,7 @@ export default function OrderDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   const { data: res, isLoading } = useQuery({
     queryKey: ["order", id],
@@ -26,12 +28,22 @@ export default function OrderDetailPage() {
 
   const cancelOrder = useMutation({
     mutationFn: () => api.post(`/api/v1/orders/${id}/cancel`, { reason: "사용자 취소" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["order", id] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["order", id] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      toast("주문이 취소되었습니다", "success");
+    },
+    onError: () => toast("주문 취소에 실패했습니다", "error"),
   });
 
   const confirmPurchase = useMutation({
     mutationFn: () => api.post(`/api/v1/orders/${id}/confirm`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["order", id] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["order", id] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      toast("구매가 확정되었습니다", "success");
+    },
+    onError: () => toast("구매 확정에 실패했습니다", "error"),
   });
 
   if (isLoading) return <div className="h-64 bg-gray-100 rounded-2xl animate-pulse" />;
@@ -99,7 +111,7 @@ export default function OrderDetailPage() {
               disabled={cancelOrder.isPending}
               className="flex-1 py-2.5 border border-red-300 text-red-500 rounded-xl font-medium hover:bg-red-50 transition disabled:opacity-50"
             >
-              주문 취소
+              {cancelOrder.isPending ? "취소 중..." : "주문 취소"}
             </button>
           )}
           {order.status === "PENDING_PAYMENT" && (
@@ -116,7 +128,7 @@ export default function OrderDetailPage() {
               disabled={confirmPurchase.isPending}
               className="flex-1 py-2.5 bg-sky-500 text-white rounded-xl font-semibold hover:bg-sky-600 transition disabled:opacity-50"
             >
-              구매 확정
+              {confirmPurchase.isPending ? "처리 중..." : "구매 확정"}
             </button>
           )}
         </div>

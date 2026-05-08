@@ -8,6 +8,7 @@ import { z } from "zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/axios";
+import { useToast } from "@/components/ui/Toast";
 
 /* ── 타입 ── */
 interface ShippingAddress {
@@ -118,8 +119,8 @@ export default function MyPage() {
   const queryClient = useQueryClient();
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [profileSuccess, setProfileSuccess] = useState(false);
   const [editingAddressId, setEditingAddressId] = useState<number | "new" | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!user) router.replace("/login");
@@ -138,26 +139,42 @@ export default function MyPage() {
   /* 배송지 추가 */
   const createAddress = useMutation({
     mutationFn: (data: AddressForm) => api.post("/api/v1/users/me/addresses", data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["shipping-addresses"] }); setEditingAddressId(null); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shipping-addresses"] });
+      setEditingAddressId(null);
+      toast("배송지가 추가되었습니다", "success");
+    },
+    onError: () => toast("배송지 추가에 실패했습니다", "error"),
   });
 
   /* 배송지 수정 */
   const updateAddress = useMutation({
     mutationFn: ({ id, data }: { id: number; data: AddressForm }) =>
       api.put(`/api/v1/users/me/addresses/${id}`, data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["shipping-addresses"] }); setEditingAddressId(null); },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shipping-addresses"] });
+      setEditingAddressId(null);
+      toast("배송지가 수정되었습니다", "success");
+    },
+    onError: () => toast("배송지 수정에 실패했습니다", "error"),
   });
 
   /* 기본배송지 설정 */
   const setDefault = useMutation({
     mutationFn: (id: number) => api.patch(`/api/v1/users/me/addresses/${id}/default`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["shipping-addresses"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shipping-addresses"] });
+      toast("기본 배송지가 변경되었습니다", "success");
+    },
   });
 
   /* 배송지 삭제 */
   const deleteAddress = useMutation({
     mutationFn: (id: number) => api.delete(`/api/v1/users/me/addresses/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["shipping-addresses"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["shipping-addresses"] });
+      toast("배송지가 삭제되었습니다", "success");
+    },
   });
 
   /* 프로필 폼 */
@@ -173,9 +190,8 @@ export default function MyPage() {
       if (data.password) body.password = data.password;
       await api.put("/api/v1/users/me", body);
       if (user && accessToken) updateName(data.name);
-      setProfileSuccess(true);
       setIsEditingProfile(false);
-      setTimeout(() => setProfileSuccess(false), 3000);
+      toast("프로필이 수정되었습니다", "success");
     } catch {
       setError("root", { message: "수정에 실패했습니다. 다시 시도해주세요." });
     }
@@ -191,12 +207,6 @@ export default function MyPage() {
   return (
     <div className="max-w-lg mx-auto flex flex-col gap-4">
       <h1 className="text-2xl font-bold">마이페이지</h1>
-
-      {profileSuccess && (
-        <div className="px-4 py-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm">
-          프로필이 수정되었습니다.
-        </div>
-      )}
 
       {/* ── 프로필 카드 */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 divide-y divide-gray-200">
