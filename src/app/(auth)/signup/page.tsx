@@ -42,8 +42,7 @@ export default function SignupPage() {
   };
 
   return (
-    <main className="flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="w-full max-w-sm bg-white rounded-2xl shadow p-8">
+    <div className="w-full max-w-sm bg-white rounded-2xl shadow p-8">
         <h1 className="text-2xl font-bold text-center mb-6">⏰ 회원가입</h1>
         <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-4">
           <div>
@@ -100,7 +99,6 @@ export default function SignupPage() {
             로그인
           </Link>
         </p>
-      </div>
-    </main>
+    </div>
   );
 }
