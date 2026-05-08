@@ -1,34 +1,93 @@
 @import "tailwindcss";
 
+/* dark variant: next-themes가 <html class="dark">로 주입 */
+@variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #f8fafc;
-  --foreground: #0f172a;
+  --bg-base: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-subtle: #f1f5f9;
+  --text-primary: #0f172a;
+  --text-secondary: #64748b;
+  --border-color: #e2e8f0;
+}
+
+.dark {
+  --bg-base: #0f172a;
+  --bg-card: #1e293b;
+  --bg-subtle: #334155;
+  --text-primary: #f1f5f9;
+  --text-secondary: #94a3b8;
+  --border-color: #334155;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  transition: background-color 0.2s, color 0.2s;
 }
 
-/* 입력창 기본 가시성 */
+/* 카드 */
+.dark .bg-white {
+  background-color: var(--bg-card) !important;
+}
+.dark .bg-gray-50 {
+  background-color: var(--bg-subtle) !important;
+}
+.dark .bg-gray-100 {
+  background-color: #334155 !important;
+}
+
+/* 테두리 */
+.dark .border-gray-200 {
+  border-color: var(--border-color) !important;
+}
+.dark .border-gray-300 {
+  border-color: #475569 !important;
+}
+.dark .divide-gray-200 > * + * {
+  border-color: var(--border-color) !important;
+}
+
+/* 텍스트 */
+.dark .text-gray-900 { color: #f1f5f9 !important; }
+.dark .text-gray-800 { color: #e2e8f0 !important; }
+.dark .text-gray-700 { color: #cbd5e1 !important; }
+.dark .text-gray-600 { color: #94a3b8 !important; }
+.dark .text-gray-500 { color: #64748b !important; }
+.dark .text-gray-400 { color: #475569 !important; }
+.dark .text-gray-300 { color: #334155 !important; }
+
+/* 입력 */
 input, textarea, select {
-  color: #0f172a;
-  background-color: #ffffff;
+  color: var(--text-primary);
+  background-color: var(--bg-card);
 }
-
 input::placeholder, textarea::placeholder {
-  color: #94a3b8;
+  color: var(--text-secondary);
+}
+.dark input, .dark textarea, .dark select {
+  border-color: #475569;
 }
 
-/* 테이블 기본 텍스트 */
+/* 테이블 */
 td {
-  color: #1e293b;
+  color: var(--text-primary);
 }
+
+/* 호버 */
+.dark .hover\:bg-gray-50:hover { background-color: #334155 !important; }
+.dark .hover\:bg-red-50:hover  { background-color: #2d1a1a !important; }
+.dark .hover\:bg-sky-50:hover  { background-color: #0c2340 !important; }
+
+/* 애니메이션 스켈레톤 */
+.dark .bg-gray-100.animate-pulse { background-color: #1e293b !important; }
+
+/* 스크롤바 */
+.dark ::-webkit-scrollbar-track { background: #1e293b; }
+.dark ::-webkit-scrollbar-thumb { background: #475569; }
