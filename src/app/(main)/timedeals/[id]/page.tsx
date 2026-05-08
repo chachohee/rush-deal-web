@@ -83,10 +83,10 @@ export default function TimeDealDetailPage() {
         ← 목록으로
       </button>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
         <div className="flex items-center justify-between mb-4">
           <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-            deal.status === "ACTIVE" ? "bg-orange-500 text-white" : "bg-gray-200 text-gray-600"
+            deal.status === "ACTIVE" ? "bg-sky-500 text-white" : "bg-gray-200 text-gray-600"
           }`}>
             {deal.status === "ACTIVE" ? "진행중" : deal.status}
           </span>
@@ -99,7 +99,7 @@ export default function TimeDealDetailPage() {
         <p className="text-gray-500 mb-6">{deal.description}</p>
 
         <div className="flex items-baseline gap-2 mb-6">
-          <span className="text-3xl font-bold text-orange-500">
+          <span className="text-3xl font-bold text-sky-500">
             {deal.discountPrice?.toLocaleString()}원
           </span>
           <span className="text-sm text-gray-400">1인 최대 {deal.limitQuantity}개</span>
@@ -112,7 +112,7 @@ export default function TimeDealDetailPage() {
               enterQueue.mutate();
             }}
             disabled={enterQueue.isPending}
-            className="w-full py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition disabled:opacity-50"
+            className="w-full py-3 bg-sky-500 text-white rounded-xl font-semibold hover:bg-sky-600 transition disabled:opacity-50"
           >
             {enterQueue.isPending ? "대기열 진입 중..." : "대기열 진입하기"}
           </button>
@@ -120,12 +120,12 @@ export default function TimeDealDetailPage() {
 
         {step === "queue" && (
           <div className="flex flex-col gap-3">
-            <div className="bg-orange-50 rounded-xl p-4 text-center">
+            <div className="bg-sky-50 rounded-xl p-4 text-center">
               <p className="text-sm text-gray-500 mb-1">대기열 진입 완료</p>
               {rankData?.data?.status === "ACTIVE" ? (
                 <p className="font-bold text-green-600">활성화됨 — 바로 주문할 수 있어요!</p>
               ) : (
-                <p className="font-bold text-orange-500">
+                <p className="font-bold text-sky-500">
                   대기 순위: {rankData?.data?.rank ?? "—"}번
                 </p>
               )}
@@ -133,7 +133,7 @@ export default function TimeDealDetailPage() {
             <div className="flex gap-2">
               <button
                 onClick={() => checkRank()}
-                className="flex-1 py-2.5 border border-orange-400 text-orange-500 rounded-xl font-medium hover:bg-orange-50 transition"
+                className="flex-1 py-2.5 border border-sky-400 text-sky-500 rounded-xl font-medium hover:bg-sky-50 transition"
               >
                 순위 확인
               </button>
@@ -141,7 +141,7 @@ export default function TimeDealDetailPage() {
                 <button
                   onClick={() => createOrder.mutate(1)}
                   disabled={createOrder.isPending}
-                  className="flex-1 py-2.5 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition disabled:opacity-50"
+                  className="flex-1 py-2.5 bg-sky-500 text-white rounded-xl font-semibold hover:bg-sky-600 transition disabled:opacity-50"
                 >
                   {createOrder.isPending ? "주문 중..." : "주문하기 (1개)"}
                 </button>

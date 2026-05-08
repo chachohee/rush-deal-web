@@ -21,64 +21,68 @@ export default function Header() {
   };
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+    <header className="sticky top-0 z-50 bg-white border-b-2 border-sky-500 shadow-sm">
       <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/timedeals" className="text-xl font-bold text-orange-500">
-          ⏰ Rush Deal
+        {/* 로고 */}
+        <Link href="/timedeals" className="flex items-center gap-2">
+          <span className="text-xl font-black text-sky-500 tracking-tight">RUSH</span>
+          <span className="text-xl font-black text-gray-900 tracking-tight">DEAL</span>
         </Link>
 
-        <nav className="flex items-center gap-6 text-sm font-medium">
-          <Link href="/timedeals" className="text-gray-600 hover:text-orange-500 transition">
+        {/* 네비게이션 */}
+        <nav className="flex items-center gap-1 text-sm font-medium">
+          <Link href="/timedeals" className="px-3 py-2 rounded-lg text-gray-700 hover:bg-sky-50 hover:text-sky-600 transition">
             타임딜
           </Link>
-          <Link href="/products" className="text-gray-600 hover:text-orange-500 transition">
-            상품
-          </Link>
           {user && (
-            <Link href="/orders" className="text-gray-600 hover:text-orange-500 transition">
+            <Link href="/orders" className="px-3 py-2 rounded-lg text-gray-700 hover:bg-sky-50 hover:text-sky-600 transition">
               내 주문
             </Link>
           )}
           {user && (
-            <Link href="/mypage" className="text-gray-600 hover:text-orange-500 transition">
+            <Link href="/mypage" className="px-3 py-2 rounded-lg text-gray-700 hover:bg-sky-50 hover:text-sky-600 transition">
               마이페이지
             </Link>
           )}
           {(user?.role === "SELLER" || user?.role === "MASTER") && (
-            <Link href="/seller/products" className="text-blue-600 hover:text-blue-700 transition font-semibold">
-              상품관리
-            </Link>
-          )}
-          {(user?.role === "SELLER" || user?.role === "MASTER") && (
-            <Link href="/seller/timedeals" className="text-blue-600 hover:text-blue-700 transition font-semibold">
-              타임딜관리
-            </Link>
+            <>
+              <Link href="/seller/products" className="px-3 py-2 rounded-lg text-sky-600 hover:bg-sky-50 transition font-semibold">
+                상품관리
+              </Link>
+              <Link href="/seller/timedeals" className="px-3 py-2 rounded-lg text-sky-600 hover:bg-sky-50 transition font-semibold">
+                타임딜관리
+              </Link>
+            </>
           )}
           {user?.role === "MASTER" && (
-            <Link href="/admin" className="text-purple-600 hover:text-purple-700 transition font-semibold">
+            <Link href="/admin" className="px-3 py-2 rounded-lg text-purple-600 hover:bg-purple-50 transition font-semibold">
               관리자
             </Link>
           )}
         </nav>
 
-        <div className="flex items-center gap-3 text-sm">
+        {/* 로그인/로그아웃 */}
+        <div className="flex items-center gap-2 text-sm">
           {user ? (
             <>
+              <span className="text-gray-500 text-xs hidden sm:block">
+                {user.name}님 ({user.role === "MASTER" ? "관리자" : user.role === "SELLER" ? "판매자" : "일반회원"})
+              </span>
               <button
                 onClick={handleLogout}
-                className="px-4 py-1.5 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition"
+                className="px-4 py-1.5 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition text-sm"
               >
                 로그아웃
               </button>
             </>
           ) : (
             <>
-              <Link href="/login" className="text-gray-600 hover:text-orange-500 transition">
+              <Link href="/login" className="px-4 py-1.5 text-gray-700 hover:text-sky-600 transition font-medium">
                 로그인
               </Link>
               <Link
                 href="/signup"
-                className="px-4 py-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition"
+                className="px-4 py-1.5 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition font-semibold"
               >
                 회원가입
               </Link>

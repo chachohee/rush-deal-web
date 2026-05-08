@@ -49,7 +49,7 @@ export default function OrdersPage() {
       {data?.data?.content?.length === 0 ? (
         <div className="text-center py-20 text-gray-400">
           <p className="mb-4">주문 내역이 없어요</p>
-          <Link href="/timedeals" className="text-orange-500 font-medium hover:underline">
+          <Link href="/timedeals" className="text-sky-500 font-medium hover:underline">
             타임딜 보러가기
           </Link>
         </div>
@@ -61,7 +61,7 @@ export default function OrdersPage() {
               <Link
                 key={order.orderId}
                 href={`/orders/${order.orderId}`}
-                className="bg-white border border-gray-100 rounded-2xl p-5 hover:shadow-sm transition flex items-center justify-between"
+                className="bg-white border border-gray-200 rounded-2xl p-5 hover:shadow-sm transition flex items-center justify-between"
               >
                 <div>
                   <p className="text-sm text-gray-400 mb-1">
@@ -71,7 +71,7 @@ export default function OrdersPage() {
                     {order.items?.[0]?.productSnapshot?.productName ?? "상품"}
                     {order.items?.length > 1 && ` 외 ${order.items.length - 1}건`}
                   </p>
-                  <p className="text-orange-500 font-bold mt-1">
+                  <p className="text-sky-500 font-bold mt-1">
                     {order.finalAmount?.toLocaleString()}원
                   </p>
                 </div>

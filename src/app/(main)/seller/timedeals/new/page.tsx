@@ -75,13 +75,13 @@ export default function NewTimeDealPage() {
       <h1 className="text-2xl font-bold mb-6">타임딜 등록</h1>
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col gap-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col gap-4">
           <h2 className="font-semibold text-gray-700">기본 정보</h2>
 
           <div>
             <label className="block text-sm font-medium mb-1">상품 선택</label>
             <select {...register("productId")}
-              className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400 bg-white">
+              className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400 bg-white">
               <option value="">상품을 선택해주세요</option>
               {products.map((p: any) => (
                 <option key={p.productId} value={p.productId}>
@@ -95,14 +95,14 @@ export default function NewTimeDealPage() {
           <div>
             <label className="block text-sm font-medium mb-1">타임딜 제목</label>
             <input {...register("title")} placeholder="타임딜 제목을 입력해주세요"
-              className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400" />
+              className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400" />
             {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>}
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-1">설명</label>
             <textarea {...register("description")} rows={3} placeholder="타임딜 설명을 입력해주세요"
-              className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400 resize-none" />
+              className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400 resize-none" />
             {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>}
           </div>
 
@@ -110,14 +110,14 @@ export default function NewTimeDealPage() {
             <div className="flex-1">
               <label className="block text-sm font-medium mb-1">할인가 (원)</label>
               <input {...register("discountPrice", { valueAsNumber: true })} type="number" min={0} placeholder="0"
-                className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400" />
+                className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400" />
               {errors.discountPrice && <p className="text-red-500 text-xs mt-1">{errors.discountPrice.message}</p>}
             </div>
 
             <div className="flex-1">
               <label className="block text-sm font-medium mb-1">인당 구매 제한</label>
               <input {...register("limitQuantity", { valueAsNumber: true })} type="number" min={1} placeholder="1"
-                className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400" />
+                className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400" />
               {errors.limitQuantity && <p className="text-red-500 text-xs mt-1">{errors.limitQuantity.message}</p>}
             </div>
           </div>
@@ -126,14 +126,14 @@ export default function NewTimeDealPage() {
             <div className="flex-1">
               <label className="block text-sm font-medium mb-1">시작 시간</label>
               <input {...register("startAt")} type="datetime-local"
-                className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400" />
+                className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400" />
               {errors.startAt && <p className="text-red-500 text-xs mt-1">{errors.startAt.message}</p>}
             </div>
 
             <div className="flex-1">
               <label className="block text-sm font-medium mb-1">종료 시간</label>
               <input {...register("endAt")} type="datetime-local"
-                className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400" />
+                className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400" />
               {errors.endAt && <p className="text-red-500 text-xs mt-1">{errors.endAt.message}</p>}
             </div>
           </div>
@@ -141,7 +141,7 @@ export default function NewTimeDealPage() {
           <div>
             <label className="block text-sm font-medium mb-1">초기 상태</label>
             <select {...register("status")}
-              className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400 bg-white">
+              className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400 bg-white">
               <option value="SCHEDULED">예정 (등록 후 시작 시간에 자동 시작)</option>
               <option value="IN_PROGRESS">즉시 시작</option>
             </select>
@@ -151,7 +151,7 @@ export default function NewTimeDealPage() {
         {errors.root && <p className="text-red-500 text-sm text-center">{errors.root.message}</p>}
 
         <button type="submit" disabled={isSubmitting}
-          className="w-full py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition disabled:opacity-50">
+          className="w-full py-3 bg-sky-500 text-white rounded-xl font-semibold hover:bg-sky-600 transition disabled:opacity-50">
           {isSubmitting ? "등록 중..." : "타임딜 등록"}
         </button>
       </form>

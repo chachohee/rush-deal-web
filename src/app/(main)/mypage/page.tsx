@@ -92,15 +92,15 @@ export default function MyPage() {
         </div>
       )}
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 divide-y divide-gray-50">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 divide-y divide-gray-200">
         {/* 프로필 헤더 */}
         <div className="p-6 flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-orange-100 flex items-center justify-center text-2xl font-bold text-orange-500">
+          <div className="w-14 h-14 rounded-full bg-sky-100 flex items-center justify-center text-2xl font-bold text-sky-500">
             {user.name?.[0] ?? "?"}
           </div>
           <div>
             <p className="font-bold text-lg">{user.name}</p>
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-orange-50 text-orange-500">
+            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-sky-50 text-sky-500">
               {ROLE_LABEL[user.role] ?? user.role}
             </span>
           </div>
@@ -114,7 +114,7 @@ export default function MyPage() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">이름</label>
                 <input
                   {...register("name")}
-                  className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400"
+                  className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400"
                 />
                 {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
               </div>
@@ -126,7 +126,7 @@ export default function MyPage() {
                   {...register("password")}
                   type="password"
                   placeholder="8자 이상"
-                  className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400"
+                  className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400"
                 />
                 {errors.password && (
                   <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>
@@ -143,7 +143,7 @@ export default function MyPage() {
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="flex-1 py-2.5 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition disabled:opacity-50"
+                  className="flex-1 py-2.5 bg-sky-500 text-white rounded-xl font-semibold hover:bg-sky-600 transition disabled:opacity-50"
                 >
                   {isSubmitting ? "저장 중..." : "저장"}
                 </button>

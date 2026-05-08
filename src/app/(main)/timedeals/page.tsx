@@ -36,8 +36,8 @@ export default function TimeDealsPage() {
             onClick={() => setStatus(tab.value)}
             className={`px-4 py-2 rounded-full text-sm font-medium transition ${
               status === tab.value
-                ? "bg-orange-500 text-white"
-                : "bg-white border border-gray-300 text-gray-600 hover:border-orange-400"
+                ? "bg-sky-500 text-white"
+                : "bg-white border border-gray-300 text-gray-600 hover:border-sky-400"
             }`}
           >
             {tab.label}

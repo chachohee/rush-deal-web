@@ -91,19 +91,19 @@ export default function EditTimeDealPage() {
       <h1 className="text-2xl font-bold mb-6">타임딜 수정</h1>
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col gap-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col gap-4">
 
           <div>
             <label className="block text-sm font-medium mb-1">제목</label>
             <input {...register("title")}
-              className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400" />
+              className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400" />
             {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>}
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-1">설명</label>
             <textarea {...register("description")} rows={3}
-              className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400 resize-none" />
+              className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400 resize-none" />
             {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>}
           </div>
 
@@ -111,14 +111,14 @@ export default function EditTimeDealPage() {
             <div className="flex-1">
               <label className="block text-sm font-medium mb-1">할인가 (원)</label>
               <input {...register("discountPrice", { valueAsNumber: true })} type="number" min={0}
-                className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400" />
+                className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400" />
               {errors.discountPrice && <p className="text-red-500 text-xs mt-1">{errors.discountPrice.message}</p>}
             </div>
 
             <div className="flex-1">
               <label className="block text-sm font-medium mb-1">인당 구매 제한</label>
               <input {...register("limitQuantity", { valueAsNumber: true })} type="number" min={1}
-                className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400" />
+                className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400" />
               {errors.limitQuantity && <p className="text-red-500 text-xs mt-1">{errors.limitQuantity.message}</p>}
             </div>
           </div>
@@ -127,14 +127,14 @@ export default function EditTimeDealPage() {
             <div className="flex-1">
               <label className="block text-sm font-medium mb-1">시작 시간</label>
               <input {...register("startAt")} type="datetime-local"
-                className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400" />
+                className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400" />
               {errors.startAt && <p className="text-red-500 text-xs mt-1">{errors.startAt.message}</p>}
             </div>
 
             <div className="flex-1">
               <label className="block text-sm font-medium mb-1">종료 시간</label>
               <input {...register("endAt")} type="datetime-local"
-                className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400" />
+                className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400" />
               {errors.endAt && <p className="text-red-500 text-xs mt-1">{errors.endAt.message}</p>}
             </div>
           </div>
@@ -145,7 +145,7 @@ export default function EditTimeDealPage() {
         {errors.root && <p className="text-red-500 text-sm text-center">{errors.root.message}</p>}
 
         <button type="submit" disabled={isSubmitting}
-          className="w-full py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition disabled:opacity-50">
+          className="w-full py-3 bg-sky-500 text-white rounded-xl font-semibold hover:bg-sky-600 transition disabled:opacity-50">
           {isSubmitting ? "수정 중..." : "타임딜 수정"}
         </button>
       </form>

@@ -43,10 +43,10 @@ export default function OrderDetailPage() {
         ← 목록으로
       </button>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col gap-5">
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col gap-5">
         <div className="flex items-center justify-between">
           <h1 className="text-lg font-bold">주문 상세</h1>
-          <span className="text-sm font-semibold text-orange-500">
+          <span className="text-sm font-semibold text-sky-500">
             {STATUS_LABEL[order.status] ?? order.status}
           </span>
         </div>
@@ -57,7 +57,7 @@ export default function OrderDetailPage() {
 
         <div className="flex flex-col gap-3">
           {order.items?.map((item: any) => (
-            <div key={item.orderItemId} className="flex justify-between items-start py-3 border-t border-gray-50">
+            <div key={item.orderItemId} className="flex justify-between items-start py-3 border-t border-gray-200">
               <div>
                 <p className="font-medium">{item.productSnapshot?.productName}</p>
                 <p className="text-sm text-gray-400 mt-0.5">{item.quantity}개</p>
@@ -67,7 +67,7 @@ export default function OrderDetailPage() {
           ))}
         </div>
 
-        <div className="border-t border-gray-100 pt-4 flex flex-col gap-1.5 text-sm">
+        <div className="border-t border-gray-200 pt-4 flex flex-col gap-1.5 text-sm">
           <div className="flex justify-between text-gray-500">
             <span>상품 금액</span>
             <span>{order.totalAmount?.toLocaleString()}원</span>
@@ -80,7 +80,7 @@ export default function OrderDetailPage() {
           )}
           <div className="flex justify-between font-bold text-base mt-1">
             <span>최종 결제금액</span>
-            <span className="text-orange-500">{order.finalAmount?.toLocaleString()}원</span>
+            <span className="text-sky-500">{order.finalAmount?.toLocaleString()}원</span>
           </div>
         </div>
 
@@ -106,7 +106,7 @@ export default function OrderDetailPage() {
             <button
               onClick={() => confirmPurchase.mutate()}
               disabled={confirmPurchase.isPending}
-              className="flex-1 py-2.5 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition disabled:opacity-50"
+              className="flex-1 py-2.5 bg-sky-500 text-white rounded-xl font-semibold hover:bg-sky-600 transition disabled:opacity-50"
             >
               구매 확정
             </button>

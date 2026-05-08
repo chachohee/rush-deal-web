@@ -86,25 +86,25 @@ export default function EditProductPage() {
       <h1 className="text-2xl font-bold mb-6">상품 수정</h1>
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col gap-4">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col gap-4">
           <div>
             <label className="block text-sm font-medium mb-1">회사명</label>
             <input {...register("companyName")}
-              className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400" />
+              className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400" />
             {errors.companyName && <p className="text-red-500 text-xs mt-1">{errors.companyName.message}</p>}
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-1">상품명</label>
             <input {...register("productName")}
-              className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400" />
+              className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400" />
             {errors.productName && <p className="text-red-500 text-xs mt-1">{errors.productName.message}</p>}
           </div>
 
           <div>
             <label className="block text-sm font-medium mb-1">상품 설명</label>
             <textarea {...register("description")} rows={3}
-              className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400 resize-none" />
+              className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400 resize-none" />
             {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>}
           </div>
 
@@ -112,14 +112,14 @@ export default function EditProductPage() {
             <div className="flex-1">
               <label className="block text-sm font-medium mb-1">가격 (원)</label>
               <input {...register("price", { valueAsNumber: true })} type="number" min={0}
-                className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400" />
+                className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400" />
               {errors.price && <p className="text-red-500 text-xs mt-1">{errors.price.message}</p>}
             </div>
 
             <div className="flex-1">
               <label className="block text-sm font-medium mb-1">카테고리</label>
               <select {...register("category")}
-                className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400 bg-white">
+                className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400 bg-white">
                 {CATEGORIES.map((c) => (
                   <option key={c} value={c}>{CATEGORY_LABEL[c]}</option>
                 ))}
@@ -133,7 +133,7 @@ export default function EditProductPage() {
         {errors.root && <p className="text-red-500 text-sm text-center">{errors.root.message}</p>}
 
         <button type="submit" disabled={isSubmitting}
-          className="w-full py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition disabled:opacity-50">
+          className="w-full py-3 bg-sky-500 text-white rounded-xl font-semibold hover:bg-sky-600 transition disabled:opacity-50">
           {isSubmitting ? "수정 중..." : "상품 수정"}
         </button>
       </form>

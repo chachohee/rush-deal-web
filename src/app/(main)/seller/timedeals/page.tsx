@@ -42,7 +42,7 @@ export default function SellerTimeDealsPage() {
         <h1 className="text-2xl font-bold">타임딜 관리</h1>
         <Link
           href="/seller/timedeals/new"
-          className="px-4 py-2 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition text-sm"
+          className="px-4 py-2 bg-sky-500 text-white rounded-xl font-semibold hover:bg-sky-600 transition text-sm"
         >
           + 타임딜 등록
         </Link>
@@ -57,12 +57,12 @@ export default function SellerTimeDealsPage() {
       ) : deals.length === 0 ? (
         <div className="text-center py-20 text-gray-400">
           <p className="mb-4">등록된 타임딜이 없어요</p>
-          <Link href="/seller/timedeals/new" className="text-orange-500 font-medium hover:underline">
+          <Link href="/seller/timedeals/new" className="text-sky-500 font-medium hover:underline">
             첫 타임딜 등록하기
           </Link>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
               <tr>
@@ -74,13 +74,13 @@ export default function SellerTimeDealsPage() {
                 <th className="px-5 py-3 text-left">액션</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-50">
+            <tbody className="divide-y divide-gray-200">
               {deals.map((deal: any) => {
                 const status = STATUS_LABEL[deal.status] ?? { label: deal.status, className: "text-gray-500 bg-gray-100" };
                 return (
                   <tr key={deal.id} className="hover:bg-gray-50 transition">
                     <td className="px-5 py-3 font-medium">{deal.title}</td>
-                    <td className="px-5 py-3 text-orange-500 font-semibold">
+                    <td className="px-5 py-3 text-sky-500 font-semibold">
                       {deal.price?.toLocaleString()}원
                     </td>
                     <td className="px-5 py-3">
@@ -88,10 +88,10 @@ export default function SellerTimeDealsPage() {
                         {status.label}
                       </span>
                     </td>
-                    <td className="px-5 py-3 text-gray-500 text-xs">
+                    <td className="px-5 py-3 text-gray-600 text-xs">
                       {deal.startAt ? new Date(deal.startAt).toLocaleString("ko-KR") : "-"}
                     </td>
-                    <td className="px-5 py-3 text-gray-500 text-xs">
+                    <td className="px-5 py-3 text-gray-600 text-xs">
                       {deal.endAt ? new Date(deal.endAt).toLocaleString("ko-KR") : "-"}
                     </td>
                     <td className="px-5 py-3">

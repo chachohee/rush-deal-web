@@ -60,7 +60,7 @@ export default function LoginPage() {
               {...register("email")}
               type="email"
               placeholder="example@email.com"
-              className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400"
+              className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400"
             />
             {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
           </div>
@@ -70,7 +70,7 @@ export default function LoginPage() {
               {...register("password")}
               type="password"
               placeholder="비밀번호"
-              className="w-full border rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-orange-400"
+              className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400"
             />
             {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
           </div>
@@ -78,14 +78,14 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full bg-orange-500 text-white py-2 rounded-lg font-semibold hover:bg-orange-600 transition disabled:opacity-50"
+            className="w-full bg-sky-500 text-white py-2 rounded-lg font-semibold hover:bg-sky-600 transition disabled:opacity-50"
           >
             {isSubmitting ? "로그인 중..." : "로그인"}
           </button>
         </form>
         <p className="text-center text-sm text-gray-500 mt-4">
           계정이 없으신가요?{" "}
-          <Link href="/signup" className="text-orange-500 font-medium hover:underline">
+          <Link href="/signup" className="text-sky-500 font-medium hover:underline">
             회원가입
           </Link>
         </p>

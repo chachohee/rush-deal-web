@@ -94,7 +94,7 @@ export default function AdminPage() {
             onClick={() => setTab(t)}
             className={`px-5 py-2.5 text-sm font-medium border-b-2 transition ${
               tab === t
-                ? "border-orange-500 text-orange-500"
+                ? "border-sky-500 text-sky-500"
                 : "border-transparent text-gray-500 hover:text-gray-700"
             }`}
           >
@@ -105,7 +105,7 @@ export default function AdminPage() {
 
       {/* ── 유저 관리 */}
       {tab === "users" && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
           {usersLoading ? (
             <div className="p-8 text-center text-gray-400">불러오는 중...</div>
           ) : (
@@ -118,14 +118,14 @@ export default function AdminPage() {
                   <th className="px-5 py-3 text-left">역할</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-gray-200">
                 {usersData?.map((u) => {
                   const role = ROLE_LABEL[u.role] ?? { label: u.role, className: "text-gray-500 bg-gray-100" };
                   return (
                     <tr key={u.userId} className="hover:bg-gray-50 transition">
-                      <td className="px-5 py-3 text-gray-400">{u.userId}</td>
+                      <td className="px-5 py-3 text-gray-600">{u.userId}</td>
                       <td className="px-5 py-3 font-medium">{u.name}</td>
-                      <td className="px-5 py-3 text-gray-500">{u.email}</td>
+                      <td className="px-5 py-3 text-gray-700">{u.email}</td>
                       <td className="px-5 py-3">
                         <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${role.className}`}>
                           {role.label}
@@ -142,7 +142,7 @@ export default function AdminPage() {
 
       {/* ── 타임딜 관리 */}
       {tab === "timedeals" && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
           {dealsLoading ? (
             <div className="p-8 text-center text-gray-400">불러오는 중...</div>
           ) : (
@@ -156,13 +156,13 @@ export default function AdminPage() {
                   <th className="px-5 py-3 text-left">액션</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-50">
+              <tbody className="divide-y divide-gray-200">
                 {deals.map((deal: any) => {
                   const status = DEAL_STATUS_LABEL[deal.status] ?? { label: deal.status, className: "text-gray-500 bg-gray-100" };
                   return (
                     <tr key={deal.timeDealId} className="hover:bg-gray-50 transition">
                       <td className="px-5 py-3 font-medium">{deal.productName ?? deal.product?.name ?? "-"}</td>
-                      <td className="px-5 py-3 text-orange-500 font-semibold">
+                      <td className="px-5 py-3 text-sky-500 font-semibold">
                         {deal.discountPrice?.toLocaleString()}원
                       </td>
                       <td className="px-5 py-3">
@@ -170,7 +170,7 @@ export default function AdminPage() {
                           {status.label}
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-gray-500">
+                      <td className="px-5 py-3 text-gray-700">
                         {deal.endTime ? new Date(deal.endTime).toLocaleString("ko-KR") : "-"}
                       </td>
                       <td className="px-5 py-3">
@@ -199,7 +199,7 @@ export default function AdminPage() {
 
       {/* ── 대기열 정책 */}
       {tab === "queue-policies" && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
           {policiesLoading ? (
             <div className="p-8 text-center text-gray-400">불러오는 중...</div>
           ) : (
@@ -215,7 +215,7 @@ export default function AdminPage() {
                     <th className="px-5 py-3 text-left">액션</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-50">
+                <tbody className="divide-y divide-gray-200">
                   {policies.map((p: any) => {
                     const status = POLICY_STATUS_LABEL[p.status] ?? { label: p.status, className: "text-gray-500 bg-gray-100" };
                     return (
@@ -226,10 +226,10 @@ export default function AdminPage() {
                             {status.label}
                           </span>
                         </td>
-                        <td className="px-5 py-3 text-gray-500">
+                        <td className="px-5 py-3 text-gray-700">
                           {p.startTime ? new Date(p.startTime).toLocaleString("ko-KR") : "-"}
                         </td>
-                        <td className="px-5 py-3 text-gray-500">
+                        <td className="px-5 py-3 text-gray-700">
                           {p.endTime ? new Date(p.endTime).toLocaleString("ko-KR") : "-"}
                         </td>
                         <td className="px-5 py-3">{p.limitSize}명</td>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 const STATUS_STYLE: Record<string, { label: string; className: string }> = {
-  ACTIVE:    { label: "진행중",   className: "bg-orange-500 text-white" },
+  ACTIVE:    { label: "진행중",   className: "bg-sky-500 text-white" },
   SCHEDULED: { label: "진행예정", className: "bg-blue-500 text-white" },
   SOLD_OUT:  { label: "품절",     className: "bg-gray-400 text-white" },
   ENDED:     { label: "마감",     className: "bg-gray-300 text-gray-600" },
@@ -25,7 +25,7 @@ export default function TimeDealCard({ deal }: Props) {
 
   const card = (
     <div
-      className={`bg-white rounded-2xl shadow-sm border border-gray-100 p-5 flex flex-col gap-3 transition ${
+      className={`bg-white rounded-2xl shadow-sm border border-gray-200 p-5 flex flex-col gap-3 transition ${
         isClickable ? "hover:shadow-md hover:-translate-y-0.5 cursor-pointer" : "opacity-60"
       }`}
     >
@@ -45,8 +45,8 @@ export default function TimeDealCard({ deal }: Props) {
         <p className="text-sm text-gray-500 line-clamp-2 mt-1">{deal.description}</p>
       </div>
 
-      <div className="mt-auto pt-2 border-t border-gray-50">
-        <span className="text-xl font-bold text-orange-500">
+      <div className="mt-auto pt-2 border-t border-gray-200">
+        <span className="text-xl font-bold text-sky-500">
           {deal.discountPrice.toLocaleString()}원
         </span>
       </div>
