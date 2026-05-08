@@ -151,11 +151,11 @@ export default function AdminPage() {
 
       {/* ── 유저 관리 */}
       {tab === "users" && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-x-auto">
           {usersLoading ? (
             <div className="p-8 text-center text-gray-400">불러오는 중...</div>
           ) : (
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[480px]">
               <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
                 <tr>
                   <th className="px-5 py-3 text-left">ID</th>
@@ -192,7 +192,7 @@ export default function AdminPage() {
           {dealsLoading ? (
             <div className="p-8 text-center text-gray-400">불러오는 중...</div>
           ) : (
-            <table className="w-full text-sm">
+            <table className="w-full text-sm min-w-[580px]">
               <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
                 <tr>
                   <th className="px-5 py-3 text-left">상품명</th>
@@ -374,12 +374,12 @@ export default function AdminPage() {
           )}
 
           {/* 정책 목록 */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-x-auto">
             {policiesLoading ? (
               <div className="p-8 text-center text-gray-400">불러오는 중...</div>
             ) : (
               <>
-                <table className="w-full text-sm">
+                <table className="w-full text-sm min-w-[640px]">
                   <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
                     <tr>
                       <th className="px-5 py-3 text-left">타임딜명</th>
