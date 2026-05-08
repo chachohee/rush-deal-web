@@ -26,10 +26,25 @@ const POLICY_STATUS_LABEL: Record<string, { label: string; className: string }> 
   STOPPED: { label: "중단됨",   className: "text-red-500 bg-red-50" },
 };
 
+const EMPTY_FORM = {
+  productId: "",
+  dealName: "",
+  status: "RUNNING",
+  startTime: "",
+  endTime: "",
+  maxCapacity: 100,
+  limitSize: 10,
+  queueGap: 5,
+  ttl: 300,
+};
+
 export default function AdminPage() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const [tab, setTab] = useState<Tab>("users");
+  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [formError, setFormError] = useState("");
   const queryClient = useQueryClient();
 
   useEffect(() => {
@@ -37,7 +52,6 @@ export default function AdminPage() {
     if (user.role !== "MASTER") router.replace("/timedeals");
   }, [user, router]);
 
-  // ── 유저 목록
   const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: ["admin-users"],
     queryFn: async () => {
@@ -47,7 +61,6 @@ export default function AdminPage() {
     enabled: tab === "users" && user?.role === "MASTER",
   });
 
-  // ── 타임딜 목록
   const { data: dealData, isLoading: dealsLoading } = useQuery({
     queryKey: ["admin-timedeals"],
     queryFn: async () => {
@@ -62,11 +75,19 @@ export default function AdminPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-timedeals"] }),
   });
 
-  // ── 대기열 정책
   const { data: policyData, isLoading: policiesLoading } = useQuery({
     queryKey: ["admin-queue-policies"],
     queryFn: async () => {
       const res = await api.get("/api/v1/queue/policies?size=50");
+      return res.data;
+    },
+    enabled: tab === "queue-policies" && user?.role === "MASTER",
+  });
+
+  const { data: productsData } = useQuery({
+    queryKey: ["admin-products"],
+    queryFn: async () => {
+      const res = await api.get("/api/v1/products?size=100");
       return res.data;
     },
     enabled: tab === "queue-policies" && user?.role === "MASTER",
@@ -77,16 +98,41 @@ export default function AdminPage() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-queue-policies"] }),
   });
 
+  const createPolicy = useMutation({
+    mutationFn: async () => {
+      await api.post("/api/v1/queue/policies", {
+        productId: form.productId,
+        dealName: form.dealName,
+        status: form.status,
+        startTime: form.startTime,
+        endTime: form.endTime,
+        maxCapacity: Number(form.maxCapacity),
+        limitSize: Number(form.limitSize),
+        queueGap: Number(form.queueGap),
+        ttl: Number(form.ttl),
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-queue-policies"] });
+      setShowCreateForm(false);
+      setForm(EMPTY_FORM);
+      setFormError("");
+    },
+    onError: () => setFormError("정책 생성에 실패했습니다. 입력값을 확인해주세요."),
+  });
+
   if (!user || user.role !== "MASTER") return null;
 
   const deals = dealData?.content ?? dealData?.data?.content ?? [];
   const policies = policyData?.data?.content ?? policyData?.content ?? [];
+  const products = productsData?.content ?? productsData?.data?.content ?? [];
+
+  const inputCls = "w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400";
 
   return (
     <div>
       <h1 className="text-2xl font-bold mb-6">관리자 페이지</h1>
 
-      {/* 탭 */}
       <div className="flex gap-1 mb-6 border-b border-gray-200">
         {(["users", "timedeals", "queue-policies"] as Tab[]).map((t) => (
           <button
@@ -199,63 +245,193 @@ export default function AdminPage() {
 
       {/* ── 대기열 정책 */}
       {tab === "queue-policies" && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          {policiesLoading ? (
-            <div className="p-8 text-center text-gray-400">불러오는 중...</div>
-          ) : (
-            <>
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
-                  <tr>
-                    <th className="px-5 py-3 text-left">타임딜명</th>
-                    <th className="px-5 py-3 text-left">상태</th>
-                    <th className="px-5 py-3 text-left">시작</th>
-                    <th className="px-5 py-3 text-left">종료</th>
-                    <th className="px-5 py-3 text-left">최대 인원</th>
-                    <th className="px-5 py-3 text-left">액션</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {policies.map((p: any) => {
-                    const status = POLICY_STATUS_LABEL[p.status] ?? { label: p.status, className: "text-gray-500 bg-gray-100" };
-                    return (
-                      <tr key={p.policyId} className="hover:bg-gray-50 transition">
-                        <td className="px-5 py-3 font-medium">{p.timeDealName}</td>
-                        <td className="px-5 py-3">
-                          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${status.className}`}>
-                            {status.label}
-                          </span>
-                        </td>
-                        <td className="px-5 py-3 text-gray-700">
-                          {p.startTime ? new Date(p.startTime).toLocaleString("ko-KR") : "-"}
-                        </td>
-                        <td className="px-5 py-3 text-gray-700">
-                          {p.endTime ? new Date(p.endTime).toLocaleString("ko-KR") : "-"}
-                        </td>
-                        <td className="px-5 py-3">{p.limitSize}명</td>
-                        <td className="px-5 py-3">
-                          <button
-                            onClick={() => {
-                              if (confirm("정책을 삭제하시겠습니까?")) {
-                                deletePolicy.mutate(p.policyId);
-                              }
-                            }}
-                            disabled={deletePolicy.isPending}
-                            className="text-xs px-3 py-1.5 border border-red-300 text-red-500 rounded-lg hover:bg-red-50 transition disabled:opacity-50"
-                          >
-                            삭제
-                          </button>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-              {policies.length === 0 && (
-                <div className="p-8 text-center text-gray-400">등록된 대기열 정책이 없습니다</div>
-              )}
-            </>
+        <div className="flex flex-col gap-4">
+          {/* 정책 생성 버튼 */}
+          <div className="flex justify-end">
+            <button
+              onClick={() => { setShowCreateForm((v) => !v); setFormError(""); }}
+              className="text-sm px-4 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition font-semibold"
+            >
+              {showCreateForm ? "취소" : "+ 정책 생성"}
+            </button>
+          </div>
+
+          {/* 정책 생성 폼 */}
+          {showCreateForm && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+              <h2 className="font-semibold text-gray-700 mb-4">새 대기열 정책</h2>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium mb-1">상품 선택</label>
+                  <select
+                    value={form.productId}
+                    onChange={(e) => setForm((f) => ({ ...f, productId: e.target.value }))}
+                    className={inputCls + " bg-white"}
+                  >
+                    <option value="">상품을 선택해주세요</option>
+                    {products.map((p: any) => (
+                      <option key={p.productId} value={p.productId}>
+                        {p.productName} ({p.companyName})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium mb-1">타임딜 이름</label>
+                  <input
+                    value={form.dealName}
+                    onChange={(e) => setForm((f) => ({ ...f, dealName: e.target.value }))}
+                    placeholder="대기열 정책의 타임딜 이름"
+                    className={inputCls}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">초기 상태</label>
+                  <select
+                    value={form.status}
+                    onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
+                    className={inputCls + " bg-white"}
+                  >
+                    <option value="RUNNING">실행중 (RUNNING)</option>
+                    <option value="PAUSED">일시정지 (PAUSED)</option>
+                    <option value="STOPPED">중단됨 (STOPPED)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">최대 허용 인원</label>
+                  <input
+                    type="number" min={1}
+                    value={form.maxCapacity}
+                    onChange={(e) => setForm((f) => ({ ...f, maxCapacity: Number(e.target.value) }))}
+                    className={inputCls}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">시작 시간</label>
+                  <input
+                    type="datetime-local"
+                    value={form.startTime}
+                    onChange={(e) => setForm((f) => ({ ...f, startTime: e.target.value }))}
+                    className={inputCls}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">종료 시간</label>
+                  <input
+                    type="datetime-local"
+                    value={form.endTime}
+                    onChange={(e) => setForm((f) => ({ ...f, endTime: e.target.value }))}
+                    className={inputCls}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">활성화 당 허용 인원 (limitSize)</label>
+                  <input
+                    type="number" min={1}
+                    value={form.limitSize}
+                    onChange={(e) => setForm((f) => ({ ...f, limitSize: Number(e.target.value) }))}
+                    className={inputCls}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-1">활성 체크 주기 (queueGap)</label>
+                  <input
+                    type="number" min={1}
+                    value={form.queueGap}
+                    onChange={(e) => setForm((f) => ({ ...f, queueGap: Number(e.target.value) }))}
+                    className={inputCls}
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium mb-1">토큰 TTL (초, 최소 60)</label>
+                  <input
+                    type="number" min={60}
+                    value={form.ttl}
+                    onChange={(e) => setForm((f) => ({ ...f, ttl: Number(e.target.value) }))}
+                    className={inputCls}
+                  />
+                </div>
+              </div>
+
+              {formError && <p className="text-red-500 text-sm mt-3">{formError}</p>}
+
+              <button
+                onClick={() => createPolicy.mutate()}
+                disabled={createPolicy.isPending}
+                className="mt-4 w-full py-2.5 bg-sky-500 text-white rounded-xl font-semibold hover:bg-sky-600 transition disabled:opacity-50"
+              >
+                {createPolicy.isPending ? "생성 중..." : "정책 생성"}
+              </button>
+            </div>
           )}
+
+          {/* 정책 목록 */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            {policiesLoading ? (
+              <div className="p-8 text-center text-gray-400">불러오는 중...</div>
+            ) : (
+              <>
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+                    <tr>
+                      <th className="px-5 py-3 text-left">타임딜명</th>
+                      <th className="px-5 py-3 text-left">상태</th>
+                      <th className="px-5 py-3 text-left">시작</th>
+                      <th className="px-5 py-3 text-left">종료</th>
+                      <th className="px-5 py-3 text-left">최대 인원</th>
+                      <th className="px-5 py-3 text-left">액션</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {policies.map((p: any) => {
+                      const pStatus = POLICY_STATUS_LABEL[p.status] ?? { label: p.status, className: "text-gray-500 bg-gray-100" };
+                      return (
+                        <tr key={p.policyId} className="hover:bg-gray-50 transition">
+                          <td className="px-5 py-3 font-medium">{p.timeDealName}</td>
+                          <td className="px-5 py-3">
+                            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${pStatus.className}`}>
+                              {pStatus.label}
+                            </span>
+                          </td>
+                          <td className="px-5 py-3 text-gray-700">
+                            {p.startTime ? new Date(p.startTime).toLocaleString("ko-KR") : "-"}
+                          </td>
+                          <td className="px-5 py-3 text-gray-700">
+                            {p.endTime ? new Date(p.endTime).toLocaleString("ko-KR") : "-"}
+                          </td>
+                          <td className="px-5 py-3">{p.limitSize}명</td>
+                          <td className="px-5 py-3">
+                            <button
+                              onClick={() => {
+                                if (confirm("정책을 삭제하시겠습니까?")) {
+                                  deletePolicy.mutate(p.policyId);
+                                }
+                              }}
+                              disabled={deletePolicy.isPending}
+                              className="text-xs px-3 py-1.5 border border-red-300 text-red-500 rounded-lg hover:bg-red-50 transition disabled:opacity-50"
+                            >
+                              삭제
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+                {policies.length === 0 && (
+                  <div className="p-8 text-center text-gray-400">등록된 대기열 정책이 없습니다</div>
+                )}
+              </>
+            )}
+          </div>
         </div>
       )}
     </div>

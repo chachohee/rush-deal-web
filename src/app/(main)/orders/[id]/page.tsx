@@ -102,6 +102,14 @@ export default function OrderDetailPage() {
               주문 취소
             </button>
           )}
+          {order.status === "PENDING_PAYMENT" && (
+            <button
+              onClick={() => router.push(`/payment/${order.orderId}`)}
+              className="flex-1 py-2.5 bg-sky-500 text-white rounded-xl font-semibold hover:bg-sky-600 transition"
+            >
+              결제하기
+            </button>
+          )}
           {order.status === "PAID" && (
             <button
               onClick={() => confirmPurchase.mutate()}
