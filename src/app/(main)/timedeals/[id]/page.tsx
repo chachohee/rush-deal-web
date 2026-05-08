@@ -2,9 +2,20 @@
 
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useParams, useRouter } from "next/navigation";
+import { useState } from "react";
 import api from "@/lib/axios";
 import { useAuthStore } from "@/store/authStore";
-import { useState } from "react";
+
+interface ShippingAddress {
+  addressId: number;
+  recipientName: string;
+  recipientPhone: string;
+  zipCode: string;
+  addressBase: string;
+  addressDetail: string;
+  deliveryMessage: string | null;
+  isDefault: boolean;
+}
 
 export default function TimeDealDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +31,18 @@ export default function TimeDealDetailPage() {
       return res.data;
     },
   });
+
+  // 기본 배송지 조회
+  const { data: addresses = [] } = useQuery<ShippingAddress[]>({
+    queryKey: ["shipping-addresses"],
+    queryFn: async () => {
+      const res = await api.get("/api/v1/users/me/addresses");
+      return res.data;
+    },
+    enabled: !!user,
+  });
+
+  const defaultAddress = addresses.find((a) => a.isDefault) ?? addresses[0] ?? null;
 
   // 대기열 진입
   const enterQueue = useMutation({
@@ -55,7 +78,23 @@ export default function TimeDealDetailPage() {
         {
           items: [{ timeDealStockId: stockId, quantity }],
           pointUsed: 0,
-          shippingInfo: { recipientName: user?.name, recipientPhone: user?.phone ?? "010-0000-0000", address: user?.address ?? "주소 미등록" },
+          shippingInfo: defaultAddress
+            ? {
+                recipientName: defaultAddress.recipientName,
+                recipientPhone: defaultAddress.recipientPhone,
+                zipCode: defaultAddress.zipCode,
+                addressBase: defaultAddress.addressBase,
+                addressDetail: defaultAddress.addressDetail,
+                deliveryMessage: defaultAddress.deliveryMessage ?? "",
+              }
+            : {
+                recipientName: user?.name ?? "",
+                recipientPhone: "01000000000",
+                zipCode: "00000",
+                addressBase: "주소 미등록",
+                addressDetail: "마이페이지에서 배송지를 등록해주세요",
+                deliveryMessage: "",
+              },
         },
         { headers: { "X-Queue-Token": queueToken } }
       );
@@ -105,6 +144,16 @@ export default function TimeDealDetailPage() {
           <span className="text-sm text-gray-400">1인 최대 {deal.limitQuantity}개</span>
         </div>
 
+        {/* 배송지 미등록 안내 */}
+        {step === "detail" && deal.status === "ACTIVE" && !defaultAddress && user && (
+          <div className="mb-4 px-4 py-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700 flex items-center justify-between">
+            <span>기본 배송지가 없어요</span>
+            <button onClick={() => router.push("/mypage")} className="font-semibold underline">
+              배송지 등록
+            </button>
+          </div>
+        )}
+
         {step === "detail" && deal.status === "ACTIVE" && (
           <button
             onClick={() => {
@@ -130,6 +179,12 @@ export default function TimeDealDetailPage() {
                 </p>
               )}
             </div>
+            {defaultAddress && (
+              <div className="bg-gray-50 rounded-xl px-4 py-3 text-xs text-gray-500">
+                <span className="font-medium text-gray-700">배송지: </span>
+                {defaultAddress.addressBase} {defaultAddress.addressDetail}
+              </div>
+            )}
             <div className="flex gap-2">
               <button
                 onClick={() => checkRank()}
