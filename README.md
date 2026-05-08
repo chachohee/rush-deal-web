@@ -102,7 +102,7 @@ npm install
 npm run dev
 ```
 
-브라우저에서 `http://localhost:3000` 접속
+브라우저에서 `http://localhost:3001` 접속
 
 ---
 
