@@ -55,7 +55,7 @@ export default function TimeDealDetailPage() {
         {
           items: [{ timeDealStockId: stockId, quantity }],
           pointUsed: 0,
-          shippingInfo: { recipientName: user?.name, recipientPhone: "010-0000-0000", address: "주소 입력 필요" },
+          shippingInfo: { recipientName: user?.name, recipientPhone: user?.phone ?? "010-0000-0000", address: user?.address ?? "주소 미등록" },
         },
         { headers: { "X-Queue-Token": queueToken } }
       );
