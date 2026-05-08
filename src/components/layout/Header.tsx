@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
-
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/axios";
 import ThemeToggle from "@/components/ui/ThemeToggle";
@@ -15,62 +14,53 @@ export default function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    setMenuOpen(false);
-  }, [pathname]);
+  useEffect(() => { setMenuOpen(false); }, [pathname]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node))
         setMenuOpen(false);
-      }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
   const handleLogout = async () => {
-    try {
-      await api.post("/api/v1/auth/logout");
-    } catch {
-      // 실패해도 로컬 상태 초기화
-    } finally {
-      clearAuth();
-      router.push("/login");
-    }
+    try { await api.post("/api/v1/auth/logout"); } catch { /* ignore */ }
+    finally { clearAuth(); router.push("/timedeals"); }
   };
 
   const navLinks = [
-    { href: "/timedeals", label: "타임딜", show: true },
-    { href: "/orders", label: "내 주문", show: !!user },
-    { href: "/mypage", label: "마이페이지", show: !!user },
-    { href: "/seller/products", label: "상품관리", show: user?.role === "SELLER" || user?.role === "MASTER", highlight: "seller" },
-    { href: "/seller/timedeals", label: "타임딜관리", show: user?.role === "SELLER" || user?.role === "MASTER", highlight: "seller" },
-    { href: "/admin", label: "관리자", show: user?.role === "MASTER", highlight: "admin" },
+    { href: "/timedeals",       label: "TIMEDEAL",   show: true },
+    { href: "/orders",          label: "주문 내역",   show: !!user },
+    { href: "/mypage",          label: "마이페이지",  show: !!user },
+    { href: "/seller/products", label: "상품관리",    show: user?.role === "SELLER" || user?.role === "MASTER" },
+    { href: "/seller/timedeals",label: "타임딜관리",  show: user?.role === "SELLER" || user?.role === "MASTER" },
+    { href: "/admin",           label: "관리자",      show: user?.role === "MASTER" },
   ].filter((l) => l.show);
 
-  const linkClass = (highlight?: string) => {
-    if (highlight === "admin") return "text-purple-600 hover:bg-purple-50";
-    if (highlight === "seller") return "text-sky-600 hover:bg-sky-50 font-semibold";
-    return "text-gray-700 hover:bg-sky-50 hover:text-sky-600";
-  };
+  const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
   return (
-    <header className="sticky top-0 z-50 bg-white border-b-2 border-sky-500 shadow-sm">
-      <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
+      <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between gap-8">
         {/* 로고 */}
-        <Link href="/timedeals" className="flex items-center gap-2 shrink-0">
-          <span className="text-xl font-black text-sky-500 tracking-tight">RUSH</span>
-          <span className="text-xl font-black text-gray-900 tracking-tight">DEAL</span>
+        <Link href="/timedeals" className="shrink-0">
+          <span className="text-base font-black tracking-[0.15em] text-gray-900">RUSH</span>
+          <span className="text-base font-black tracking-[0.15em] text-blue-600 ml-1">DEAL</span>
         </Link>
 
-        {/* 데스크톱 네비게이션 */}
-        <nav className="hidden md:flex items-center gap-1 text-sm font-medium">
+        {/* 데스크톱 네비 */}
+        <nav className="hidden md:flex items-center gap-6 flex-1">
           {navLinks.map((link) => (
             <Link
               key={link.href}
               href={link.href}
-              className={`px-3 py-2 rounded-lg transition ${linkClass(link.highlight)}`}
+              className={`text-xs font-semibold tracking-widest transition-colors ${
+                isActive(link.href)
+                  ? "text-gray-900"
+                  : "text-gray-400 hover:text-gray-900"
+              }`}
             >
               {link.label}
             </Link>
@@ -78,28 +68,26 @@ export default function Header() {
         </nav>
 
         {/* 데스크톱 우측 */}
-        <div className="hidden md:flex items-center gap-2 text-sm shrink-0">
+        <div className="hidden md:flex items-center gap-3 shrink-0">
           <ThemeToggle />
           {user ? (
             <>
-              <span className="text-gray-500 text-xs hidden lg:block">
-                {user.name}님 ({user.role === "MASTER" ? "관리자" : user.role === "SELLER" ? "판매자" : "일반회원"})
-              </span>
+              <span className="text-xs text-gray-400 hidden lg:block">{user.name}</span>
               <button
                 onClick={handleLogout}
-                className="px-4 py-1.5 border border-gray-300 rounded-lg text-gray-600 hover:bg-gray-50 transition text-sm"
+                className="text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors"
               >
                 로그아웃
               </button>
             </>
           ) : (
             <>
-              <Link href="/login" className="px-4 py-1.5 text-gray-700 hover:text-sky-600 transition font-medium">
+              <Link href="/login" className="text-xs font-medium text-gray-500 hover:text-gray-900 transition-colors">
                 로그인
               </Link>
               <Link
                 href="/signup"
-                className="px-4 py-1.5 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition font-semibold"
+                className="text-xs font-semibold px-4 py-2 bg-gray-900 text-white hover:bg-gray-700 transition-colors tracking-wide"
               >
                 회원가입
               </Link>
@@ -110,60 +98,53 @@ export default function Header() {
         {/* 모바일 우측 */}
         <div className="flex md:hidden items-center gap-1" ref={menuRef}>
           <ThemeToggle />
-          {!user && (
-            <Link href="/login" className="text-sm text-sky-500 font-semibold px-2">
-              로그인
-            </Link>
-          )}
-
           <button
             onClick={() => setMenuOpen((v) => !v)}
-            className="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition"
-            aria-label="메뉴 열기"
+            className="p-2 text-gray-600 hover:text-gray-900 transition-colors"
+            aria-label="메뉴"
           >
             {menuOpen ? (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             ) : (
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             )}
           </button>
 
           {menuOpen && (
-            <div className="absolute top-16 left-0 right-0 bg-white border-b border-gray-200 shadow-lg z-50">
-              <nav className="max-w-6xl mx-auto px-4 py-3 flex flex-col gap-1">
+            <div className="absolute top-14 left-0 right-0 bg-white border-b border-gray-200 z-50">
+              <nav className="px-6 py-4 flex flex-col gap-1">
                 {user && (
-                  <div className="px-3 py-2 text-xs text-gray-400 border-b border-gray-100 mb-1">
-                    {user.name}님 ({user.role === "MASTER" ? "관리자" : user.role === "SELLER" ? "판매자" : "일반회원"})
-                  </div>
+                  <p className="text-xs text-gray-400 pb-3 border-b border-gray-100 mb-2">
+                    {user.name} · {user.role === "MASTER" ? "관리자" : user.role === "SELLER" ? "판매자" : "일반회원"}
+                  </p>
                 )}
                 {navLinks.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className={`px-3 py-2.5 rounded-lg text-sm transition ${linkClass(link.highlight)}`}
+                    className={`py-2.5 text-sm font-medium transition-colors ${
+                      isActive(link.href) ? "text-gray-900" : "text-gray-500"
+                    }`}
                   >
                     {link.label}
                   </Link>
                 ))}
-                {user ? (
-                  <button
-                    onClick={handleLogout}
-                    className="mt-1 px-3 py-2.5 text-left text-sm text-red-500 hover:bg-red-50 rounded-lg transition"
-                  >
-                    로그아웃
-                  </button>
-                ) : (
-                  <Link
-                    href="/signup"
-                    className="mt-1 px-3 py-2.5 text-sm text-center bg-sky-500 text-white rounded-lg font-semibold hover:bg-sky-600 transition"
-                  >
-                    회원가입
-                  </Link>
-                )}
+                <div className="pt-3 border-t border-gray-100 mt-2">
+                  {user ? (
+                    <button onClick={handleLogout} className="text-sm text-gray-400 hover:text-gray-900 transition-colors">
+                      로그아웃
+                    </button>
+                  ) : (
+                    <div className="flex gap-4">
+                      <Link href="/login" className="text-sm font-medium text-gray-500">로그인</Link>
+                      <Link href="/signup" className="text-sm font-semibold text-blue-600">회원가입</Link>
+                    </div>
+                  )}
+                </div>
               </nav>
             </div>
           )}

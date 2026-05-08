@@ -7,10 +7,10 @@ import { useAuthStore } from "@/store/authStore";
 import { useState } from "react";
 
 const STATUS_TABS = [
-  { label: "전체", value: "" },
+  { label: "전체",   value: "" },
   { label: "진행중", value: "ACTIVE" },
-  { label: "진행예정", value: "SCHEDULED" },
-  { label: "마감", value: "ENDED" },
+  { label: "예정",   value: "SCHEDULED" },
+  { label: "마감",   value: "ENDED" },
 ];
 
 export default function TimeDealsPage() {
@@ -29,24 +29,31 @@ export default function TimeDealsPage() {
 
   return (
     <div>
-      {/* 비로그인 유저 안내 배너 */}
+      {/* 비로그인 안내 */}
       {!user && (
-        <div className="mb-6 px-5 py-4 bg-sky-50 border border-sky-200 rounded-2xl">
-          <p className="text-sm text-sky-600">타임딜 참여 및 상품 주문은 로그인이 필요합니다. 마음에 드는 딜을 찾으셨다면 로그인 후 바로 참여해보세요!</p>
+        <div className="mb-8 px-4 py-3 border-l-2 border-blue-500 bg-blue-50 text-sm text-blue-700">
+          타임딜 참여 및 상품 주문은 로그인이 필요합니다.
         </div>
       )}
 
-      <h1 className="text-2xl font-bold mb-6">타임딜</h1>
+      {/* 헤더 */}
+      <div className="flex items-end justify-between mb-6">
+        <h1 className="text-2xl font-bold tracking-tight">타임딜</h1>
+        <p className="text-xs text-zinc-400 tabular-nums">
+          {data?.content?.length ?? 0}개
+        </p>
+      </div>
 
-      <div className="flex gap-2 mb-6">
+      {/* 탭 필터 */}
+      <div className="flex gap-0 mb-8 border-b border-gray-200">
         {STATUS_TABS.map((tab) => (
           <button
             key={tab.value}
             onClick={() => setStatus(tab.value)}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition ${
+            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 -mb-px ${
               status === tab.value
-                ? "bg-sky-500 text-white"
-                : "bg-white border border-gray-300 text-gray-600 hover:border-sky-400"
+                ? "border-gray-900 text-gray-900"
+                : "border-transparent text-zinc-400 hover:text-gray-700"
             }`}
           >
             {tab.label}
@@ -55,15 +62,15 @@ export default function TimeDealsPage() {
       </div>
 
       {isLoading ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="h-64 bg-gray-100 rounded-2xl animate-pulse" />
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="aspect-square bg-gray-100 animate-pulse" />
           ))}
         </div>
       ) : data?.content?.length === 0 ? (
-        <div className="text-center text-gray-400 py-20">진행 중인 타임딜이 없습니다</div>
+        <div className="text-center text-zinc-400 py-24 text-sm">진행 중인 타임딜이 없습니다</div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {data?.content?.map((deal: any) => (
             <TimeDealCard key={deal.id} deal={deal} />
           ))}

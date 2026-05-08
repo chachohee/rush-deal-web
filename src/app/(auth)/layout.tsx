@@ -6,11 +6,11 @@ import ThemeToggle from "@/components/ui/ThemeToggle";
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <>
-      <header className="sticky top-0 z-50 bg-white border-b-2 border-sky-500 shadow-sm">
-        <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <span className="text-xl font-black text-sky-500 tracking-tight">RUSH</span>
-            <span className="text-xl font-black text-gray-900 tracking-tight">DEAL</span>
+      <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
+        <div className="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
+          <Link href="/timedeals">
+            <span className="text-base font-black tracking-[0.15em] text-gray-900">RUSH</span>
+            <span className="text-base font-black tracking-[0.15em] text-blue-600 ml-1">DEAL</span>
           </Link>
           <ThemeToggle />
         </div>
