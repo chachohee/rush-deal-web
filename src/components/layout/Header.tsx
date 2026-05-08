@@ -44,6 +44,11 @@ export default function Header() {
               마이페이지
             </Link>
           )}
+          {(user?.role === "SELLER" || user?.role === "MASTER") && (
+            <Link href="/seller/products" className="text-blue-600 hover:text-blue-700 transition font-semibold">
+              상품관리
+            </Link>
+          )}
           {user?.role === "MASTER" && (
             <Link href="/admin" className="text-purple-600 hover:text-purple-700 transition font-semibold">
               관리자
