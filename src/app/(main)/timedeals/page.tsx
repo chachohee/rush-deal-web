@@ -8,16 +8,16 @@ import { useState } from "react";
 
 const STATUS_TABS = [
   { label: "전체",   value: "" },
-  { label: "진행중", value: "ACTIVE" },
+  { label: "진행중", value: "IN_PROGRESS" },
   { label: "예정",   value: "SCHEDULED" },
   { label: "마감",   value: "ENDED" },
 ];
 
 const EMPTY_MSG: Record<string, string> = {
-  "":        "타임딜이 없습니다",
-  ACTIVE:    "진행 중인 타임딜이 없습니다",
-  SCHEDULED: "예정된 타임딜이 없습니다",
-  ENDED:     "마감된 타임딜이 없습니다",
+  "":          "타임딜이 없습니다",
+  IN_PROGRESS: "진행 중인 타임딜이 없습니다",
+  SCHEDULED:   "예정된 타임딜이 없습니다",
+  ENDED:       "마감된 타임딜이 없습니다",
 };
 
 const PAGE_SIZE = 12;
