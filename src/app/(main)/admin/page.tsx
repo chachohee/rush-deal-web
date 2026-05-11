@@ -52,6 +52,7 @@ function toLocalDatetimeValue(isoString: string) {
 export default function AdminPage() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
+  const [mounted, setMounted] = useState(false);
   const [tab, setTab] = useState<Tab>("users");
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -60,10 +61,13 @@ export default function AdminPage() {
   const [selectedTimeDealStatus, setSelectedTimeDealStatus] = useState<string>("");
   const queryClient = useQueryClient();
 
+  useEffect(() => { setMounted(true); }, []);
+
   useEffect(() => {
+    if (!mounted) return;
     if (!user) { router.replace("/login"); return; }
     if (user.role !== "MASTER") router.replace("/timedeals");
-  }, [user, router]);
+  }, [user, router, mounted]);
 
   const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: ["admin-users"],
@@ -77,7 +81,7 @@ export default function AdminPage() {
   const { data: dealData, isLoading: dealsLoading } = useQuery({
     queryKey: ["admin-timedeals"],
     queryFn: async () => {
-      const res = await api.get("/api/v1/timedeals?size=50&sort=createdAt,desc");
+      const res = await api.get("/api/v1/timedeals/admin/all?size=50&sort=createdAt,desc");
       return res.data;
     },
     enabled: tab === "timedeals" && user?.role === "MASTER",
@@ -85,7 +89,10 @@ export default function AdminPage() {
 
   const forceEnd = useMutation({
     mutationFn: (id: string) => api.post(`/api/v1/timedeals/${id}/force-end`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-timedeals"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-timedeals"] });
+      queryClient.invalidateQueries({ queryKey: ["timedeals"] });
+    },
   });
 
   const { data: policyData, isLoading: policiesLoading } = useQuery({
@@ -174,14 +181,21 @@ export default function AdminPage() {
       setSelectedTimeDealStatus("");
       setFormError("");
     },
-    onError: () => setFormError("정책 생성에 실패했습니다. 입력값을 확인해주세요."),
+    onError: (err: any) => {
+      const code = err?.response?.data?.data?.code ?? err?.response?.data?.code;
+      if (code === "POLICY_ALREADY_EXISTS") {
+        setFormError("이 상품에 대한 대기열 정책이 이미 존재합니다.");
+      } else {
+        setFormError("정책 생성에 실패했습니다. 입력값을 확인해주세요.");
+      }
+    },
   });
 
-  if (!user || user.role !== "MASTER") return null;
+  if (!mounted || !user || user.role !== "MASTER") return null;
 
   const deals = dealData?.content ?? dealData?.data?.content ?? [];
   const allDeals = allDealsData?.content ?? allDealsData?.data?.content ?? [];
-  const policies = policyData?.data?.content ?? policyData?.content ?? [];
+  const policies = policyData?.data?.policies ?? policyData?.policies ?? policyData?.data?.content ?? policyData?.content ?? [];
 
   const TAB_LABELS: Record<Tab, string> = {
     users: "유저 관리",
