@@ -23,7 +23,7 @@ const EMPTY_MSG: Record<string, string> = {
 const PAGE_SIZE = 12;
 
 export default function TimeDealsPage() {
-  const [status, setStatus] = useState("");
+  const [status, setStatus] = useState("IN_PROGRESS");
   const user = useAuthStore((s) => s.user);
 
   const {
