@@ -44,9 +44,20 @@ const inputCls = "w-full border border-gray-200 px-3 py-2.5 text-sm outline-none
 const labelCls = "block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5";
 
 function toLocalDatetimeValue(isoString: string) {
+  if (!isoString) return "";
   const d = new Date(isoString);
+  if (isNaN(d.getTime())) return "";
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function DetailRow({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="flex justify-between py-2.5 border-b border-gray-100 last:border-0">
+      <span className="text-xs text-zinc-400 uppercase tracking-wider font-semibold">{label}</span>
+      <span className="text-sm text-gray-900 text-right">{value}</span>
+    </div>
+  );
 }
 
 export default function AdminPage() {
@@ -61,6 +72,11 @@ export default function AdminPage() {
   const [selectedTimeDealStatus, setSelectedTimeDealStatus] = useState<string>("");
   const queryClient = useQueryClient();
 
+  // 패널 상태
+  const [panel, setPanel] = useState<{ type: Tab; data: any } | null>(null);
+  const [policyEditForm, setPolicyEditForm] = useState<any>(null);
+  const [policyEditError, setPolicyEditError] = useState("");
+
   useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
@@ -68,6 +84,30 @@ export default function AdminPage() {
     if (!user) { router.replace("/login"); return; }
     if (user.role !== "MASTER") router.replace("/timedeals");
   }, [user, router, mounted]);
+
+  // 탭 변경 시 패널 닫기
+  function switchTab(t: Tab) {
+    setTab(t);
+    setPanel(null);
+  }
+
+  // 패널에 정책이 선택되면 수정 폼 초기화
+  useEffect(() => {
+    if (panel?.type === "queue-policies") {
+      const p = panel.data;
+      setPolicyEditForm({
+        timeDealName: p.timeDealName ?? "",
+        status: p.status ?? "RUNNING",
+        startTime: p.startTime ? toLocalDatetimeValue(p.startTime) : "",
+        endTime: p.endTime ? toLocalDatetimeValue(p.endTime) : "",
+        maxCapacity: p.maxCapacity ?? 100,
+        limitSize: p.limitSize ?? 10,
+        queueGap: p.queueGap ?? 5,
+        ttl: p.ttl ?? 300,
+      });
+      setPolicyEditError("");
+    }
+  }, [panel]);
 
   const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: ["admin-users"],
@@ -93,6 +133,7 @@ export default function AdminPage() {
       queryClient.invalidateQueries({ queryKey: ["admin-timedeals"] });
       queryClient.invalidateQueries({ queryKey: ["timedeals"] });
       queryClient.invalidateQueries({ queryKey: ["admin-queue-policies"] });
+      setPanel(null);
     },
   });
 
@@ -105,7 +146,6 @@ export default function AdminPage() {
     enabled: tab === "queue-policies" && user?.role === "MASTER",
   });
 
-  // 대기열 정책 생성 폼용 타임딜 목록
   const { data: allDealsData } = useQuery({
     queryKey: ["admin-all-timedeals-for-policy"],
     queryFn: async () => {
@@ -115,7 +155,6 @@ export default function AdminPage() {
     enabled: tab === "queue-policies" && user?.role === "MASTER",
   });
 
-  // 선택한 타임딜 상세 (productId, 시간 자동 입력용)
   const { data: selectedDealDetail } = useQuery({
     queryKey: ["admin-timedeal-detail-for-policy", selectedTimeDealId],
     queryFn: async () => {
@@ -125,7 +164,16 @@ export default function AdminPage() {
     enabled: !!selectedTimeDealId,
   });
 
-  // 타임딜 선택 시 폼 자동 채우기
+  // 패널용 타임딜 상세 조회
+  const { data: panelDealDetail, isLoading: panelDealLoading } = useQuery({
+    queryKey: ["panel-timedeal-detail", panel?.data?.id],
+    queryFn: async () => {
+      const res = await api.get(`/api/v1/timedeals/${panel!.data.id}`);
+      return res.data;
+    },
+    enabled: panel?.type === "timedeals" && !!panel?.data?.id,
+  });
+
   useEffect(() => {
     if (!selectedDealDetail) return;
     const td = selectedDealDetail.timeDeal;
@@ -149,7 +197,20 @@ export default function AdminPage() {
 
   const deletePolicy = useMutation({
     mutationFn: (id: string) => api.delete(`/api/v1/queue/policies/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-queue-policies"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-queue-policies"] });
+      setPanel(null);
+    },
+  });
+
+  const updatePolicy = useMutation({
+    mutationFn: ({ id, body }: { id: string; body: any }) =>
+      api.patch(`/api/v1/queue/policies/${id}`, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-queue-policies"] });
+      setPanel(null);
+    },
+    onError: () => setPolicyEditError("정책 수정에 실패했습니다."),
   });
 
   const createPolicy = useMutation({
@@ -165,7 +226,6 @@ export default function AdminPage() {
         queueGap: Number(form.queueGap),
         ttl: Number(form.ttl),
       });
-      // SCHEDULED 타임딜 선택 시 시작/종료 시간도 동기화
       if (selectedTimeDealId && selectedTimeDealStatus === "SCHEDULED") {
         await api.patch(`/api/v1/timedeals/${selectedTimeDealId}`, {
           startAt: new Date(form.startTime).toISOString(),
@@ -204,7 +264,6 @@ export default function AdminPage() {
     "queue-policies": "대기열 정책",
   };
 
-
   return (
     <div>
       <h1 className="text-2xl font-bold tracking-tight mb-6">관리자 페이지</h1>
@@ -213,7 +272,7 @@ export default function AdminPage() {
         {(["users", "timedeals", "queue-policies"] as Tab[]).map((t) => (
           <button
             key={t}
-            onClick={() => setTab(t)}
+            onClick={() => switchTab(t)}
             className={`px-5 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
               tab === t
                 ? "border-gray-900 text-gray-900"
@@ -243,8 +302,13 @@ export default function AdminPage() {
               <tbody className="divide-y divide-gray-100">
                 {usersData?.map((u) => {
                   const role = ROLE_DOT[u.role] ?? { label: u.role, dot: "bg-zinc-300" };
+                  const isSelected = panel?.type === "users" && panel.data.userId === u.userId;
                   return (
-                    <tr key={u.userId} className="hover:bg-gray-50 transition-colors">
+                    <tr
+                      key={u.userId}
+                      onClick={() => setPanel({ type: "users", data: u })}
+                      className={`cursor-pointer transition-colors ${isSelected ? "bg-gray-50" : "hover:bg-gray-50"}`}
+                    >
                       <td className="px-5 py-3 text-zinc-400 tabular-nums">{u.userId}</td>
                       <td className="px-5 py-3 font-medium">{u.name}</td>
                       <td className="px-5 py-3 text-zinc-600">{u.email}</td>
@@ -291,8 +355,13 @@ export default function AdminPage() {
                 <tbody className="divide-y divide-gray-100">
                   {deals.map((deal: any) => {
                     const s = DEAL_STATUS_DOT[deal.status] ?? { label: deal.status, dot: "bg-zinc-300" };
+                    const isSelected = panel?.type === "timedeals" && panel.data.id === deal.id;
                     return (
-                      <tr key={deal.id} className="hover:bg-gray-50 transition-colors">
+                      <tr
+                        key={deal.id}
+                        onClick={() => setPanel({ type: "timedeals", data: deal })}
+                        className={`cursor-pointer transition-colors ${isSelected ? "bg-gray-50" : "hover:bg-gray-50"}`}
+                      >
                         <td className="px-5 py-3 font-medium">{deal.title}</td>
                         <td className="px-5 py-3 font-semibold tabular-nums">
                           {(deal.price ?? deal.discountPrice)?.toLocaleString()}원
@@ -306,28 +375,30 @@ export default function AdminPage() {
                         <td className="px-5 py-3 text-zinc-600 text-xs tabular-nums">
                           {deal.endAt ? new Date(deal.endAt).toLocaleString("ko-KR") : "-"}
                         </td>
-                        <td className="px-5 py-3 flex items-center gap-2">
-                          {deal.status === "SCHEDULED" && (
-                            <Link
-                              href={`/seller/timedeals/${deal.id}/edit`}
-                              className="text-xs px-3 py-1.5 border border-gray-300 text-zinc-600 hover:border-gray-900 hover:text-gray-900 transition-colors"
-                            >
-                              수정
-                            </Link>
-                          )}
-                          {deal.status === "IN_PROGRESS" && (
-                            <button
-                              onClick={() => {
-                                if (confirm("타임딜을 강제 종료하시겠습니까?")) {
-                                  forceEnd.mutate(deal.id);
-                                }
-                              }}
-                              disabled={forceEnd.isPending}
-                              className="text-xs px-3 py-1.5 border border-gray-300 text-red-400 hover:border-red-400 hover:text-red-600 transition-colors disabled:opacity-40"
-                            >
-                              강제 종료
-                            </button>
-                          )}
+                        <td className="px-5 py-3" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex items-center gap-2">
+                            {deal.status === "SCHEDULED" && (
+                              <Link
+                                href={`/seller/timedeals/${deal.id}/edit`}
+                                className="text-xs px-3 py-1.5 border border-gray-300 text-zinc-600 hover:border-gray-900 hover:text-gray-900 transition-colors"
+                              >
+                                수정
+                              </Link>
+                            )}
+                            {deal.status === "IN_PROGRESS" && (
+                              <button
+                                onClick={() => {
+                                  if (confirm("타임딜을 강제 종료하시겠습니까?")) {
+                                    forceEnd.mutate(deal.id);
+                                  }
+                                }}
+                                disabled={forceEnd.isPending}
+                                className="text-xs px-3 py-1.5 border border-gray-300 text-red-400 hover:border-red-400 hover:text-red-600 transition-colors disabled:opacity-40"
+                              >
+                                강제 종료
+                              </button>
+                            )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -361,8 +432,6 @@ export default function AdminPage() {
             <div className="bg-white border border-gray-200 p-6">
               <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">새 대기열 정책</h2>
               <div className="grid grid-cols-2 gap-4">
-
-                {/* 타임딜 선택 (선택사항 — 자동 채우기용) */}
                 <div className="col-span-2">
                   <label className={labelCls}>타임딜 선택 <span className="normal-case font-normal text-zinc-400">(선택 시 아래 항목 자동 입력)</span></label>
                   <select
@@ -389,115 +458,48 @@ export default function AdminPage() {
                     <p className="text-xs text-amber-600 mt-1">진행중인 타임딜은 시간 변경 시 타임딜 정보에는 반영되지 않습니다.</p>
                   )}
                 </div>
-
-                {/* 타임딜 이름 */}
                 <div className="col-span-2">
                   <label className={labelCls}>타임딜 이름</label>
-                  <input
-                    value={form.dealName}
-                    onChange={(e) => setForm((f) => ({ ...f, dealName: e.target.value }))}
-                    placeholder="대기열 정책의 타임딜 이름"
-                    className={inputCls}
-                  />
+                  <input value={form.dealName} onChange={(e) => setForm((f) => ({ ...f, dealName: e.target.value }))} placeholder="대기열 정책의 타임딜 이름" className={inputCls} />
                 </div>
-
-                {/* 초기 상태 */}
                 <div>
                   <label className={labelCls}>초기 상태</label>
-                  <select
-                    value={form.status}
-                    onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
-                    className={inputCls}
-                  >
+                  <select value={form.status} onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))} className={inputCls}>
                     <option value="RUNNING">실행중 (RUNNING)</option>
                     <option value="PAUSED">일시정지 (PAUSED)</option>
                     <option value="STOPPED">중단됨 (STOPPED)</option>
                   </select>
                 </div>
-
-                {/* 최대 허용 인원 */}
                 <div>
                   <label className={labelCls}>최대 허용 인원</label>
-                  <input
-                    type="number" min={1}
-                    value={form.maxCapacity}
-                    onChange={(e) => setForm((f) => ({ ...f, maxCapacity: Number(e.target.value) }))}
-                    className={inputCls}
-                  />
+                  <input type="number" min={1} value={form.maxCapacity} onChange={(e) => setForm((f) => ({ ...f, maxCapacity: Number(e.target.value) }))} className={inputCls} />
                 </div>
-
-                {/* 시작 시간 */}
                 <div>
                   <label className={labelCls}>시작 시간</label>
-                  <input
-                    type="datetime-local"
-                    value={form.startTime}
-                    onChange={(e) => setForm((f) => ({ ...f, startTime: e.target.value }))}
-                    className={inputCls}
-                  />
+                  <input type="datetime-local" value={form.startTime} onChange={(e) => setForm((f) => ({ ...f, startTime: e.target.value }))} className={inputCls} />
                 </div>
-
-                {/* 종료 시간 */}
                 <div>
                   <label className={labelCls}>종료 시간</label>
-                  <input
-                    type="datetime-local"
-                    value={form.endTime}
-                    onChange={(e) => setForm((f) => ({ ...f, endTime: e.target.value }))}
-                    className={inputCls}
-                  />
+                  <input type="datetime-local" value={form.endTime} onChange={(e) => setForm((f) => ({ ...f, endTime: e.target.value }))} className={inputCls} />
                 </div>
-
-                {/* 활성화 당 허용 인원 */}
                 <div>
                   <label className={labelCls}>활성화 당 허용 인원</label>
-                  <input
-                    type="number" min={1}
-                    value={form.limitSize}
-                    onChange={(e) => setForm((f) => ({ ...f, limitSize: Number(e.target.value) }))}
-                    className={inputCls}
-                  />
-                  <p className="text-xs text-zinc-400 mt-1">
-                    활성 체크 주기마다 주문 가능 상태로 전환할 인원 수<br />
-                    예) 10 → 매 주기마다 10명씩 활성화
-                  </p>
+                  <input type="number" min={1} value={form.limitSize} onChange={(e) => setForm((f) => ({ ...f, limitSize: Number(e.target.value) }))} className={inputCls} />
+                  <p className="text-xs text-zinc-400 mt-1">매 주기마다 활성화할 인원 수</p>
                 </div>
-
-                {/* 활성 체크 주기 */}
                 <div>
                   <label className={labelCls}>활성 체크 주기 (초)</label>
-                  <input
-                    type="number" min={1}
-                    value={form.queueGap}
-                    onChange={(e) => setForm((f) => ({ ...f, queueGap: Number(e.target.value) }))}
-                    className={inputCls}
-                  />
-                  <p className="text-xs text-zinc-400 mt-1">
-                    몇 초마다 대기열에서 활성열로 이동할지<br />
-                    예) 5 → 5초마다 허용 인원만큼 활성화
-                  </p>
+                  <input type="number" min={1} value={form.queueGap} onChange={(e) => setForm((f) => ({ ...f, queueGap: Number(e.target.value) }))} className={inputCls} />
+                  <p className="text-xs text-zinc-400 mt-1">몇 초마다 대기열에서 활성열로 이동할지</p>
                 </div>
-
-                {/* 토큰 TTL */}
                 <div className="col-span-2">
                   <label className={labelCls}>토큰 TTL (초, 최소 60)</label>
-                  <input
-                    type="number" min={60}
-                    value={form.ttl}
-                    onChange={(e) => setForm((f) => ({ ...f, ttl: Number(e.target.value) }))}
-                    className={inputCls}
-                  />
-                  <p className="text-xs text-zinc-400 mt-1">활성화된 유저의 주문 가능 시간. 이 시간 안에 주문하지 않으면 토큰 만료.</p>
+                  <input type="number" min={60} value={form.ttl} onChange={(e) => setForm((f) => ({ ...f, ttl: Number(e.target.value) }))} className={inputCls} />
+                  <p className="text-xs text-zinc-400 mt-1">활성화된 유저의 주문 가능 시간</p>
                 </div>
               </div>
-
               {formError && <p className="text-red-500 text-xs mt-3">{formError}</p>}
-
-              <button
-                onClick={() => createPolicy.mutate()}
-                disabled={createPolicy.isPending}
-                className="mt-4 w-full py-2.5 bg-gray-900 text-white text-sm font-semibold hover:bg-gray-700 transition-colors disabled:opacity-40"
-              >
+              <button onClick={() => createPolicy.mutate()} disabled={createPolicy.isPending} className="mt-4 w-full py-2.5 bg-gray-900 text-white text-sm font-semibold hover:bg-gray-700 transition-colors disabled:opacity-40">
                 {createPolicy.isPending ? "생성 중..." : "정책 생성"}
               </button>
             </div>
@@ -517,14 +519,18 @@ export default function AdminPage() {
                       <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">종료</th>
                       <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">활성화 인원</th>
                       <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">주기(초)</th>
-                      <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">액션</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {policies.map((p: any) => {
                       const ps = POLICY_STATUS_DOT[p.status] ?? { label: p.status, dot: "bg-zinc-300" };
+                      const isSelected = panel?.type === "queue-policies" && panel.data.policyId === p.policyId;
                       return (
-                        <tr key={p.policyId} className="hover:bg-gray-50 transition-colors">
+                        <tr
+                          key={p.policyId}
+                          onClick={() => setPanel({ type: "queue-policies", data: p })}
+                          className={`cursor-pointer transition-colors ${isSelected ? "bg-gray-50" : "hover:bg-gray-50"}`}
+                        >
                           <td className="px-5 py-3 font-medium">{p.timeDealName}</td>
                           <td className="px-5 py-3">
                             <div className="flex items-center gap-1.5">
@@ -540,19 +546,6 @@ export default function AdminPage() {
                           </td>
                           <td className="px-5 py-3 text-zinc-600 tabular-nums">{p.limitSize}명</td>
                           <td className="px-5 py-3 text-zinc-600 tabular-nums">{p.queueGap}초</td>
-                          <td className="px-5 py-3">
-                            <button
-                              onClick={() => {
-                                if (confirm("정책을 삭제하시겠습니까?")) {
-                                  deletePolicy.mutate(p.policyId);
-                                }
-                              }}
-                              disabled={deletePolicy.isPending}
-                              className="text-xs px-3 py-1.5 border border-gray-300 text-red-400 hover:border-red-400 hover:text-red-600 transition-colors disabled:opacity-40"
-                            >
-                              삭제
-                            </button>
-                          </td>
                         </tr>
                       );
                     })}
@@ -566,6 +559,208 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      {/* 백드롭 */}
+      {panel && (
+        <div
+          className="fixed inset-0 bg-black/20 z-40"
+          onClick={() => setPanel(null)}
+        />
+      )}
+
+      {/* 상세 패널 */}
+      <div
+        className={`fixed top-0 right-0 h-full w-[420px] bg-white border-l border-gray-200 shadow-2xl z-50 flex flex-col transition-transform duration-200 ${
+          panel ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        {panel && (
+          <>
+            {/* 패널 헤더 */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 shrink-0">
+              <h2 className="text-sm font-semibold text-gray-900">
+                {panel.type === "users" && "유저 상세"}
+                {panel.type === "timedeals" && "타임딜 상세"}
+                {panel.type === "queue-policies" && "대기열 정책 상세"}
+              </h2>
+              <button
+                onClick={() => setPanel(null)}
+                className="text-zinc-400 hover:text-gray-900 transition-colors text-lg leading-none"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* 패널 본문 */}
+            <div className="flex-1 overflow-y-auto px-6 py-5">
+
+              {/* 유저 패널 */}
+              {panel.type === "users" && (() => {
+                const u = panel.data;
+                const role = ROLE_DOT[u.role] ?? { label: u.role, dot: "bg-zinc-300" };
+                return (
+                  <div>
+                    <DetailRow label="ID" value={<span className="tabular-nums text-zinc-500">{u.userId}</span>} />
+                    <DetailRow label="이름" value={u.name} />
+                    <DetailRow label="이메일" value={<span className="text-zinc-600">{u.email}</span>} />
+                    <DetailRow label="역할" value={
+                      <div className="flex items-center gap-1.5">
+                        <span className={`w-1.5 h-1.5 rounded-full ${role.dot}`} />
+                        <span>{role.label}</span>
+                      </div>
+                    } />
+                  </div>
+                );
+              })()}
+
+              {/* 타임딜 패널 */}
+              {panel.type === "timedeals" && (() => {
+                const deal = panel.data;
+                const s = DEAL_STATUS_DOT[deal.status] ?? { label: deal.status, dot: "bg-zinc-300" };
+                const detail = panelDealDetail;
+                const products = detail?.timeDealProdutResultList ?? [];
+                return (
+                  <div>
+                    <DetailRow label="타임딜명" value={deal.title} />
+                    <DetailRow label="상태" value={
+                      <div className="flex items-center gap-1.5">
+                        <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
+                        <span>{s.label}</span>
+                      </div>
+                    } />
+                    <DetailRow label="할인가" value={<span className="tabular-nums font-semibold">{(deal.price ?? deal.discountPrice)?.toLocaleString()}원</span>} />
+                    <DetailRow label="시작" value={<span className="tabular-nums text-zinc-600 text-xs">{deal.startAt ? new Date(deal.startAt).toLocaleString("ko-KR") : "-"}</span>} />
+                    <DetailRow label="종료" value={<span className="tabular-nums text-zinc-600 text-xs">{deal.endAt ? new Date(deal.endAt).toLocaleString("ko-KR") : "-"}</span>} />
+
+                    <div className="mt-4">
+                      <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">상품 목록</p>
+                      {panelDealLoading ? (
+                        <p className="text-xs text-zinc-400">불러오는 중...</p>
+                      ) : products.length === 0 ? (
+                        <p className="text-xs text-zinc-400">상품 정보 없음</p>
+                      ) : (
+                        <div className="flex flex-col gap-1">
+                          {products.map((p: any, i: number) => (
+                            <div key={i} className="text-xs text-zinc-600 bg-gray-50 px-3 py-2 border border-gray-100">
+                              <span className="text-zinc-400 mr-2">상품 ID</span>
+                              <span className="tabular-nums font-mono">{p.productId}</span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {deal.status === "IN_PROGRESS" && (
+                      <button
+                        onClick={() => {
+                          if (confirm("타임딜을 강제 종료하시겠습니까?")) forceEnd.mutate(deal.id);
+                        }}
+                        disabled={forceEnd.isPending}
+                        className="mt-6 w-full py-2.5 border border-red-300 text-red-500 text-sm font-semibold hover:bg-red-50 transition-colors disabled:opacity-40"
+                      >
+                        강제 종료
+                      </button>
+                    )}
+                    {deal.status === "SCHEDULED" && (
+                      <Link
+                        href={`/seller/timedeals/${deal.id}/edit`}
+                        className="mt-6 block w-full py-2.5 border border-gray-300 text-zinc-600 text-sm font-semibold text-center hover:border-gray-900 hover:text-gray-900 transition-colors"
+                      >
+                        수정
+                      </Link>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {/* 대기열 정책 패널 */}
+              {panel.type === "queue-policies" && policyEditForm && (() => {
+                const p = panel.data;
+                return (
+                  <div>
+                    <div className="mb-5">
+                      <DetailRow label="상품 ID" value={<span className="tabular-nums font-mono text-xs text-zinc-500">{p.productId}</span>} />
+                    </div>
+
+                    <div className="flex flex-col gap-3">
+                      <div>
+                        <label className={labelCls}>타임딜 이름</label>
+                        <input value={policyEditForm.timeDealName} onChange={(e) => setPolicyEditForm((f: any) => ({ ...f, timeDealName: e.target.value }))} className={inputCls} />
+                      </div>
+                      <div>
+                        <label className={labelCls}>상태</label>
+                        <select value={policyEditForm.status} onChange={(e) => setPolicyEditForm((f: any) => ({ ...f, status: e.target.value }))} className={inputCls}>
+                          <option value="RUNNING">실행중 (RUNNING)</option>
+                          <option value="PAUSED">일시정지 (PAUSED)</option>
+                          <option value="STOPPED">중단됨 (STOPPED)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className={labelCls}>최대 허용 인원</label>
+                        <input type="number" min={1} value={policyEditForm.maxCapacity} onChange={(e) => setPolicyEditForm((f: any) => ({ ...f, maxCapacity: Number(e.target.value) }))} className={inputCls} />
+                      </div>
+                      <div>
+                        <label className={labelCls}>시작 시간</label>
+                        <input type="datetime-local" value={policyEditForm.startTime} onChange={(e) => setPolicyEditForm((f: any) => ({ ...f, startTime: e.target.value }))} className={inputCls} />
+                      </div>
+                      <div>
+                        <label className={labelCls}>종료 시간</label>
+                        <input type="datetime-local" value={policyEditForm.endTime} onChange={(e) => setPolicyEditForm((f: any) => ({ ...f, endTime: e.target.value }))} className={inputCls} />
+                      </div>
+                      <div>
+                        <label className={labelCls}>활성화 당 허용 인원</label>
+                        <input type="number" min={1} value={policyEditForm.limitSize} onChange={(e) => setPolicyEditForm((f: any) => ({ ...f, limitSize: Number(e.target.value) }))} className={inputCls} />
+                      </div>
+                      <div>
+                        <label className={labelCls}>활성 체크 주기 (초)</label>
+                        <input type="number" min={1} value={policyEditForm.queueGap} onChange={(e) => setPolicyEditForm((f: any) => ({ ...f, queueGap: Number(e.target.value) }))} className={inputCls} />
+                      </div>
+                      <div>
+                        <label className={labelCls}>토큰 TTL (초)</label>
+                        <input type="number" min={60} value={policyEditForm.ttl} onChange={(e) => setPolicyEditForm((f: any) => ({ ...f, ttl: Number(e.target.value) }))} className={inputCls} />
+                      </div>
+                    </div>
+
+                    {policyEditError && <p className="text-red-500 text-xs mt-3">{policyEditError}</p>}
+
+                    <button
+                      onClick={() => updatePolicy.mutate({
+                        id: p.policyId,
+                        body: {
+                          productId: p.productId,
+                          timeDealName: policyEditForm.timeDealName,
+                          status: policyEditForm.status,
+                          startTime: policyEditForm.startTime,
+                          endTime: policyEditForm.endTime,
+                          maxCapacity: Number(policyEditForm.maxCapacity),
+                          limitSize: Number(policyEditForm.limitSize),
+                          queueGap: Number(policyEditForm.queueGap),
+                          ttl: Number(policyEditForm.ttl),
+                        },
+                      })}
+                      disabled={updatePolicy.isPending}
+                      className="mt-4 w-full py-2.5 bg-gray-900 text-white text-sm font-semibold hover:bg-gray-700 transition-colors disabled:opacity-40"
+                    >
+                      {updatePolicy.isPending ? "저장 중..." : "저장"}
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        if (confirm("정책을 삭제하시겠습니까?")) deletePolicy.mutate(p.policyId);
+                      }}
+                      disabled={deletePolicy.isPending}
+                      className="mt-2 w-full py-2.5 border border-red-300 text-red-500 text-sm font-semibold hover:bg-red-50 transition-colors disabled:opacity-40"
+                    >
+                      삭제
+                    </button>
+                  </div>
+                );
+              })()}
+
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
