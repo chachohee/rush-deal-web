@@ -189,7 +189,6 @@ export default function AdminPage() {
     "queue-policies": "대기열 정책",
   };
 
-  const timesDisabled = selectedTimeDealId && selectedTimeDealStatus === "IN_PROGRESS";
 
   return (
     <div>
@@ -372,7 +371,7 @@ export default function AdminPage() {
                       ))}
                   </select>
                   {selectedTimeDealId && selectedTimeDealStatus === "IN_PROGRESS" && (
-                    <p className="text-xs text-amber-600 mt-1">진행중인 타임딜은 시작/종료 시간이 수정되지 않습니다.</p>
+                    <p className="text-xs text-amber-600 mt-1">진행중인 타임딜은 시간 변경 시 타임딜 정보에는 반영되지 않습니다.</p>
                   )}
                 </div>
 
@@ -419,8 +418,7 @@ export default function AdminPage() {
                     type="datetime-local"
                     value={form.startTime}
                     onChange={(e) => setForm((f) => ({ ...f, startTime: e.target.value }))}
-                    disabled={!!timesDisabled}
-                    className={inputCls + (timesDisabled ? " opacity-40 cursor-not-allowed" : "")}
+                    className={inputCls}
                   />
                 </div>
 
@@ -431,8 +429,7 @@ export default function AdminPage() {
                     type="datetime-local"
                     value={form.endTime}
                     onChange={(e) => setForm((f) => ({ ...f, endTime: e.target.value }))}
-                    disabled={!!timesDisabled}
-                    className={inputCls + (timesDisabled ? " opacity-40 cursor-not-allowed" : "")}
+                    className={inputCls}
                   />
                 </div>
 
