@@ -34,7 +34,7 @@ export default function Header() {
     { href: "/timedeals",       label: "TIMEDEAL",   show: true },
     { href: "/orders",          label: "주문 내역",   show: !!user },
     { href: "/mypage",          label: "마이페이지",  show: !!user },
-    { href: "/seller/products", label: "상품관리",    show: user?.role === "SELLER" || user?.role === "MASTER" },
+    { href: "/seller/products", label: "상품관리",    show: user?.role === "SELLER" },
     { href: "/seller/timedeals",label: "타임딜관리",  show: user?.role === "SELLER" },
     { href: "/admin",           label: "관리자",      show: user?.role === "MASTER" },
   ].filter((l) => l.show);

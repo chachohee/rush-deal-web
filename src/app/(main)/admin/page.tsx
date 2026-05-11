@@ -7,7 +7,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/axios";
 
-type Tab = "users" | "timedeals" | "queue-policies";
+type Tab = "users" | "timedeals" | "queue-policies" | "products";
 
 const ROLE_DOT: Record<string, { label: string; dot: string }> = {
   USER:   { label: "일반회원", dot: "bg-zinc-300" },
@@ -76,6 +76,7 @@ export default function AdminPage() {
   const [panel, setPanel] = useState<{ type: Tab; data: any } | null>(null);
   const [policyEditForm, setPolicyEditForm] = useState<any>(null);
   const [policyEditError, setPolicyEditError] = useState("");
+  const [userRoleEdit, setUserRoleEdit] = useState("");
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -90,6 +91,11 @@ export default function AdminPage() {
     setTab(t);
     setPanel(null);
   }
+
+  // 패널에 유저가 선택되면 역할 초기화
+  useEffect(() => {
+    if (panel?.type === "users") setUserRoleEdit(panel.data.role ?? "USER");
+  }, [panel]);
 
   // 패널에 정책이 선택되면 수정 폼 초기화
   useEffect(() => {
@@ -108,6 +114,56 @@ export default function AdminPage() {
       setPolicyEditError("");
     }
   }, [panel]);
+
+  // 유저 계정 관리 뮤테이션
+  const changeRole = useMutation({
+    mutationFn: ({ id, role }: { id: number; role: string }) =>
+      api.patch(`/api/v1/users/${id}/role?role=${role}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-users"] }),
+  });
+  const blockUser = useMutation({
+    mutationFn: (id: number) => api.patch(`/api/v1/users/${id}/block`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      setPanel((p) => p ? { ...p, data: { ...p.data, isBlocked: true } } : null);
+    },
+  });
+  const unblockUser = useMutation({
+    mutationFn: (id: number) => api.patch(`/api/v1/users/${id}/unblock`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      setPanel((p) => p ? { ...p, data: { ...p.data, isBlocked: false } } : null);
+    },
+  });
+  const deleteUser = useMutation({
+    mutationFn: (id: number) => api.delete(`/api/v1/users/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      setPanel(null);
+    },
+  });
+
+  // 상품 관리 쿼리 및 뮤테이션
+  const { data: productsData, isLoading: productsLoading } = useQuery({
+    queryKey: ["admin-products"],
+    queryFn: async () => {
+      const res = await api.get("/api/v1/products?size=100&sort=createdAt,desc");
+      return res.data;
+    },
+    enabled: tab === "products" && user?.role === "MASTER",
+  });
+  const disableProduct = useMutation({
+    mutationFn: (id: string) => api.post(`/api/v1/products/${id}/disable`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-products"] }),
+  });
+  const enableProduct = useMutation({
+    mutationFn: (id: string) => api.post(`/api/v1/products/${id}/enable`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-products"] }),
+  });
+  const deleteProduct = useMutation({
+    mutationFn: (id: string) => api.delete(`/api/v1/products/${id}`),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-products"] }),
+  });
 
   const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: ["admin-users"],
@@ -258,10 +314,13 @@ export default function AdminPage() {
   const allDeals = allDealsData?.content ?? allDealsData?.data?.content ?? [];
   const policies = policyData?.data?.policies ?? policyData?.policies ?? policyData?.data?.content ?? policyData?.content ?? [];
 
+  const products = productsData?.content ?? productsData?.data?.content ?? [];
+
   const TAB_LABELS: Record<Tab, string> = {
     users: "유저 관리",
     timedeals: "타임딜 관리",
     "queue-policies": "대기열 정책",
+    products: "상품 관리",
   };
 
   return (
@@ -269,7 +328,7 @@ export default function AdminPage() {
       <h1 className="text-2xl font-bold tracking-tight mb-6">관리자 페이지</h1>
 
       <div className="flex gap-0 mb-6 border-b border-gray-200">
-        {(["users", "timedeals", "queue-policies"] as Tab[]).map((t) => (
+        {(["users", "timedeals", "queue-policies", "products"] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => switchTab(t)}
@@ -560,6 +619,61 @@ export default function AdminPage() {
         </div>
       )}
 
+      {/* 상품 관리 */}
+      {tab === "products" && (
+        <div className="flex flex-col gap-4">
+          <div className="flex justify-end">
+            <Link href="/seller/products/new" className="text-sm px-4 py-2 bg-gray-900 text-white font-semibold hover:bg-gray-700 transition-colors">
+              + 상품 등록
+            </Link>
+          </div>
+          <div className="bg-white border border-gray-200 overflow-x-auto">
+            {productsLoading ? (
+              <div className="p-8 text-center text-zinc-400 text-sm">불러오는 중...</div>
+            ) : products.length === 0 ? (
+              <div className="p-8 text-center text-zinc-400 text-sm">등록된 상품이 없습니다</div>
+            ) : (
+              <table className="w-full text-sm min-w-[600px]">
+                <thead className="bg-gray-50 text-zinc-500 text-xs">
+                  <tr>
+                    <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">상품명</th>
+                    <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">회사명</th>
+                    <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">가격</th>
+                    <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">카테고리</th>
+                    <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">액션</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {products.map((p: any) => (
+                    <tr key={p.productId} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-5 py-3 font-medium">{p.productName}</td>
+                      <td className="px-5 py-3 text-zinc-600">{p.companyName}</td>
+                      <td className="px-5 py-3 font-semibold tabular-nums">{p.price?.toLocaleString()}원</td>
+                      <td className="px-5 py-3 text-zinc-600">{p.category}</td>
+                      <td className="px-5 py-3">
+                        <div className="flex gap-2">
+                          <Link href={`/seller/products/${p.productId}/edit`} className="text-xs px-3 py-1.5 border border-gray-300 text-zinc-600 hover:border-gray-900 hover:text-gray-900 transition-colors">수정</Link>
+                          {p.status === "DISABLED" ? (
+                            <button onClick={() => enableProduct.mutate(p.productId)} disabled={enableProduct.isPending} className="text-xs px-3 py-1.5 border border-gray-300 text-blue-600 hover:border-blue-600 transition-colors disabled:opacity-40">활성화</button>
+                          ) : (
+                            <button onClick={() => disableProduct.mutate(p.productId)} disabled={disableProduct.isPending} className="text-xs px-3 py-1.5 border border-gray-300 text-zinc-600 hover:border-gray-900 transition-colors disabled:opacity-40">비활성화</button>
+                          )}
+                          <button
+                            onClick={() => { if (confirm("상품을 삭제하시겠습니까?")) deleteProduct.mutate(p.productId); }}
+                            disabled={deleteProduct.isPending}
+                            className="text-xs px-3 py-1.5 border border-gray-300 text-red-400 hover:border-red-400 hover:text-red-600 transition-colors disabled:opacity-40"
+                          >삭제</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* 백드롭 */}
       {panel && (
         <div
@@ -609,6 +723,59 @@ export default function AdminPage() {
                         <span>{role.label}</span>
                       </div>
                     } />
+                    <DetailRow label="상태" value={
+                      u.isBlocked
+                        ? <span className="text-xs text-red-500 font-semibold">정지됨</span>
+                        : u.isDeleted
+                          ? <span className="text-xs text-zinc-400 font-semibold">삭제됨</span>
+                          : <span className="text-xs text-green-600 font-semibold">정상</span>
+                    } />
+
+                    <div className="mt-5 flex flex-col gap-3">
+                      <div>
+                        <label className={labelCls}>역할 변경</label>
+                        <div className="flex gap-2">
+                          <select value={userRoleEdit} onChange={(e) => setUserRoleEdit(e.target.value)} className={inputCls}>
+                            <option value="USER">일반회원 (USER)</option>
+                            <option value="SELLER">판매자 (SELLER)</option>
+                            <option value="MASTER">관리자 (MASTER)</option>
+                          </select>
+                          <button
+                            onClick={() => changeRole.mutate({ id: u.userId, role: userRoleEdit })}
+                            disabled={changeRole.isPending || userRoleEdit === u.role}
+                            className="px-3 py-2 bg-gray-900 text-white text-xs font-semibold hover:bg-gray-700 transition-colors disabled:opacity-40 shrink-0"
+                          >
+                            변경
+                          </button>
+                        </div>
+                      </div>
+
+                      {u.isBlocked ? (
+                        <button
+                          onClick={() => unblockUser.mutate(u.userId)}
+                          disabled={unblockUser.isPending}
+                          className="w-full py-2.5 border border-blue-300 text-blue-600 text-sm font-semibold hover:bg-blue-50 transition-colors disabled:opacity-40"
+                        >
+                          정지 해제
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => { if (confirm("이 계정을 정지하시겠습니까?")) blockUser.mutate(u.userId); }}
+                          disabled={blockUser.isPending || u.isDeleted}
+                          className="w-full py-2.5 border border-yellow-300 text-yellow-600 text-sm font-semibold hover:bg-yellow-50 transition-colors disabled:opacity-40"
+                        >
+                          계정 정지
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => { if (confirm("이 계정을 삭제하시겠습니까? 되돌릴 수 없습니다.")) deleteUser.mutate(u.userId); }}
+                        disabled={deleteUser.isPending || u.isDeleted}
+                        className="w-full py-2.5 border border-red-300 text-red-500 text-sm font-semibold hover:bg-red-50 transition-colors disabled:opacity-40"
+                      >
+                        계정 삭제
+                      </button>
+                    </div>
                   </div>
                 );
               })()}
