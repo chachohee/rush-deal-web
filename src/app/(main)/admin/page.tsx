@@ -215,8 +215,8 @@ export default function AdminPage() {
                 {deals.map((deal: any) => {
                   const s = DEAL_STATUS_DOT[deal.status] ?? { label: deal.status, dot: "bg-zinc-300" };
                   return (
-                    <tr key={deal.timeDealId} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-5 py-3 font-medium">{deal.productName ?? deal.product?.name ?? "-"}</td>
+                    <tr key={deal.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-5 py-3 font-medium">{deal.title}</td>
                       <td className="px-5 py-3 font-semibold tabular-nums">
                         {(deal.price ?? deal.discountPrice)?.toLocaleString()}원
                       </td>
@@ -227,14 +227,14 @@ export default function AdminPage() {
                         </div>
                       </td>
                       <td className="px-5 py-3 text-zinc-600 text-xs tabular-nums">
-                        {deal.endTime ? new Date(deal.endTime).toLocaleString("ko-KR") : "-"}
+                        {deal.endAt ? new Date(deal.endAt).toLocaleString("ko-KR") : "-"}
                       </td>
                       <td className="px-5 py-3">
                         {deal.status === "IN_PROGRESS" && (
                           <button
                             onClick={() => {
                               if (confirm("타임딜을 강제 종료하시겠습니까?")) {
-                                forceEnd.mutate(deal.timeDealId);
+                                forceEnd.mutate(deal.id);
                               }
                             }}
                             disabled={forceEnd.isPending}
