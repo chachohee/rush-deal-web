@@ -29,7 +29,8 @@ interface Props {
     timeDealId?: string;
     title: string;
     description: string;
-    discountPrice: number;
+    price?: number;
+    discountPrice?: number;
     status: string;
     startAt: string;
     endAt: string;
