@@ -24,8 +24,9 @@ export default function TimeDealDetailPage() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const [queueToken, setQueueToken] = useState<string | null>(null);
-  const [step, setStep] = useState<"detail" | "queue" | "order">("detail");
+  const [step, setStep] = useState<"detail" | "queue">("detail");
   const [pointInput, setPointInput] = useState("");
+  const [quantity, setQuantity] = useState(1);
   const { toast } = useToast();
 
   const { data: deal, isLoading } = useQuery({
@@ -45,7 +46,7 @@ export default function TimeDealDetailPage() {
     enabled: !!user,
   });
 
-  const { data: pointData } = useQuery<{ balance: number }>({
+  const { data: pointData } = useQuery({
     queryKey: ["point-balance"],
     queryFn: async () => {
       const res = await api.get("/api/v1/points/balance");
@@ -54,18 +55,22 @@ export default function TimeDealDetailPage() {
     enabled: !!user,
   });
 
-  const pointBalance = pointData?.balance ?? 0;
+  const pointBalance: number = pointData?.balance ?? pointData?.data?.balance ?? 0;
   const defaultAddress = addresses.find((a) => a.isDefault) ?? addresses[0] ?? null;
+  const isActive = deal?.status === "ACTIVE" || deal?.status === "IN_PROGRESS";
+  const limitQty: number = deal?.limitQuantity ?? 1;
 
-  const countdown = useCountdown(deal?.endAt ?? new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString());
+  const countdown = useCountdown(
+    deal?.endAt ?? new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString()
+  );
 
-  const discountPrice: number = deal?.discountPrice ?? 0;
+  const totalPrice: number = (deal?.discountPrice ?? 0) * quantity;
   const pointUsed = Math.min(
     Math.max(0, parseInt(pointInput || "0", 10) || 0),
     pointBalance,
-    discountPrice
+    totalPrice
   );
-  const finalAmount = Math.max(0, discountPrice - pointUsed);
+  const finalAmount = Math.max(0, totalPrice - pointUsed);
 
   const enterQueue = useMutation({
     mutationFn: async () => {
@@ -73,26 +78,31 @@ export default function TimeDealDetailPage() {
       return res.data;
     },
     onSuccess: (data) => {
-      setQueueToken(data.data?.tokenId);
+      setQueueToken(data.data?.tokenId ?? data.tokenId);
       setStep("queue");
       toast("대기열에 진입했습니다", "success");
     },
     onError: () => toast("대기열 진입에 실패했습니다", "error"),
   });
 
-  const { data: rankData, refetch: checkRank } = useQuery({
+  // 3초마다 순위 자동 조회, 활성화되면 폴링 중단
+  const { data: rankData } = useQuery({
     queryKey: ["queue-rank", id, queueToken],
     queryFn: async () => {
-      const res = await api.get(`/api/v1/queues/rank?productId=${deal.productId}`, {
+      const res = await api.get(`/api/v1/queues/rank?productId=${deal?.productId}`, {
         headers: { "X-Queue-Token": queueToken },
       });
       return res.data;
     },
-    enabled: false,
+    enabled: step === "queue" && !!queueToken && !!deal?.productId,
+    refetchInterval: (query) => {
+      if (query.state.data?.data?.status === "ACTIVE") return false;
+      return 3000;
+    },
   });
 
   const createOrder = useMutation({
-    mutationFn: async (quantity: number) => {
+    mutationFn: async () => {
       const timeDealForOrder = await api.get(`/api/v1/timedeals/${id}/order`);
       const stockId = timeDealForOrder.data.products?.[0]?.timeDealStockId;
       const res = await api.post(
@@ -124,7 +134,7 @@ export default function TimeDealDetailPage() {
     },
     onSuccess: (data) => {
       toast("주문이 접수되었습니다", "success");
-      router.push(`/orders/${data.data?.orderId}`);
+      router.push(`/orders/${data.data?.orderId ?? data.orderId}`);
     },
     onError: () => toast("주문 생성에 실패했습니다", "error"),
   });
@@ -141,15 +151,18 @@ export default function TimeDealDetailPage() {
   if (!deal) return <div className="text-center py-20 text-zinc-400 text-sm">타임딜을 찾을 수 없습니다</div>;
 
   const pad = (n: number) => String(n).padStart(2, "0");
+  const canOrder = rankData?.data?.status === "ACTIVE";
 
   return (
     <div className="max-w-2xl mx-auto">
-      <button onClick={() => router.back()} className="text-xs text-zinc-400 hover:text-zinc-700 mb-6 tracking-wide transition-colors">
+      <button
+        onClick={() => router.back()}
+        className="text-xs text-zinc-400 hover:text-zinc-700 mb-6 tracking-wide transition-colors"
+      >
         ← 목록으로
       </button>
 
       <div className="bg-white border border-gray-200">
-        {/* 이미지 영역 */}
         <div className="aspect-video bg-gray-50 flex items-center justify-center">
           <span className="text-6xl select-none">⏰</span>
         </div>
@@ -158,12 +171,12 @@ export default function TimeDealDetailPage() {
           {/* 상태 + 타이머 */}
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <span className={`w-1.5 h-1.5 rounded-full ${deal.status === "ACTIVE" ? "bg-blue-500" : "bg-zinc-300"}`} />
+              <span className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-blue-500" : "bg-zinc-300"}`} />
               <span className="text-xs text-zinc-500 font-medium">
-                {deal.status === "ACTIVE" ? "진행중" : deal.status === "SCHEDULED" ? "진행예정" : "종료"}
+                {isActive ? "진행중" : deal.status === "SCHEDULED" ? "진행예정" : "종료"}
               </span>
             </div>
-            {deal.status === "ACTIVE" && !countdown.done ? (
+            {isActive && !countdown.done ? (
               <span className="text-sm font-mono font-bold text-blue-600 tabular-nums">
                 {countdown.hours > 0 ? `${pad(countdown.hours)}:` : ""}
                 {pad(countdown.minutes)}:{pad(countdown.seconds)}
@@ -183,20 +196,27 @@ export default function TimeDealDetailPage() {
               {deal.discountPrice?.toLocaleString()}
               <span className="text-lg font-normal text-zinc-400 ml-0.5">원</span>
             </span>
-            <span className="text-xs text-zinc-400">1인 최대 {deal.limitQuantity}개</span>
+            <span className="text-xs text-zinc-400">1인 최대 {limitQty}개</span>
           </div>
 
           <div className="pt-6 flex flex-col gap-3">
-            {step === "detail" && deal.status === "ACTIVE" && !defaultAddress && user && (
+            {/* 배송지 없음 경고 */}
+            {step === "detail" && isActive && !defaultAddress && user && (
               <div className="px-4 py-3 border-l-2 border-amber-400 bg-amber-50 text-xs text-amber-700 flex items-center justify-between">
                 <span>기본 배송지가 없습니다</span>
-                <button onClick={() => router.push("/mypage")} className="font-semibold underline">등록하기</button>
+                <button onClick={() => router.push("/mypage")} className="font-semibold underline">
+                  등록하기
+                </button>
               </div>
             )}
 
-            {step === "detail" && deal.status === "ACTIVE" && (
+            {/* 대기열 진입 버튼 */}
+            {step === "detail" && isActive && (
               <button
-                onClick={() => { if (!user) { router.push("/login"); return; } enterQueue.mutate(); }}
+                onClick={() => {
+                  if (!user) { router.push("/login"); return; }
+                  enterQueue.mutate();
+                }}
                 disabled={enterQueue.isPending}
                 className="w-full py-3.5 bg-gray-900 text-white text-sm font-semibold tracking-wide hover:bg-gray-700 transition-colors disabled:opacity-40"
               >
@@ -204,17 +224,28 @@ export default function TimeDealDetailPage() {
               </button>
             )}
 
+            {/* 대기열 진입 후 */}
             {step === "queue" && (
               <div className="flex flex-col gap-3">
+                {/* 순위 표시 */}
                 <div className="border border-gray-200 p-4 text-center">
-                  <p className="text-xs text-zinc-400 mb-1">대기열 진입 완료</p>
-                  {rankData?.data?.status === "ACTIVE" ? (
-                    <p className="font-bold text-blue-600">활성화 — 지금 바로 주문 가능합니다</p>
+                  {canOrder ? (
+                    <p className="font-bold text-blue-600 text-sm">활성화 — 지금 바로 주문 가능합니다</p>
+                  ) : rankData?.data?.rank != null ? (
+                    <>
+                      <p className="text-xs text-zinc-400 mb-1">현재 대기 순위</p>
+                      <p className="text-2xl font-bold text-gray-900">
+                        <span className="text-blue-600">{rankData.data.rank}</span>
+                        <span className="text-sm font-normal text-zinc-400 ml-1">번</span>
+                      </p>
+                      <p className="text-xs text-zinc-400 mt-1">순위는 자동으로 업데이트됩니다</p>
+                    </>
                   ) : (
-                    <p className="font-bold text-gray-900">대기 순위 <span className="text-blue-600">{rankData?.data?.rank ?? "—"}</span>번</p>
+                    <p className="text-xs text-zinc-400">대기 순위 조회 중...</p>
                   )}
                 </div>
 
+                {/* 배송지 */}
                 {defaultAddress && (
                   <div className="bg-gray-50 px-4 py-3 text-xs text-zinc-500">
                     <span className="font-medium text-zinc-700">배송지 </span>
@@ -222,57 +253,80 @@ export default function TimeDealDetailPage() {
                   </div>
                 )}
 
-                {rankData?.data?.status === "ACTIVE" && (
-                  <div className="border border-gray-200 p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <span className="text-sm font-medium">포인트 사용</span>
-                      <span className="text-xs text-zinc-400">보유 <span className="font-semibold text-zinc-700">{pointBalance.toLocaleString()}</span>P</span>
+                {/* 활성화 시 주문 섹션 */}
+                {canOrder && (
+                  <>
+                    {/* 수량 선택 */}
+                    <div className="border border-gray-200 p-4 flex items-center justify-between">
+                      <span className="text-sm font-medium">수량</span>
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => setQuantity((q) => Math.max(1, q - 1))}
+                          className="w-8 h-8 border border-gray-300 flex items-center justify-center hover:border-gray-900 transition-colors text-lg leading-none"
+                        >
+                          −
+                        </button>
+                        <span className="w-6 text-center text-sm font-bold tabular-nums">{quantity}</span>
+                        <button
+                          onClick={() => setQuantity((q) => Math.min(limitQty, q + 1))}
+                          className="w-8 h-8 border border-gray-300 flex items-center justify-center hover:border-gray-900 transition-colors text-lg leading-none"
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex gap-2">
-                      <input
-                        type="number"
-                        min={0}
-                        max={Math.min(pointBalance, discountPrice)}
-                        value={pointInput}
-                        onChange={(e) => setPointInput(e.target.value)}
-                        placeholder="0"
-                        className="flex-1 border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-900"
-                      />
-                      <button
-                        onClick={() => setPointInput(String(Math.min(pointBalance, discountPrice)))}
-                        className="px-3 py-2 text-xs font-medium border border-gray-300 hover:border-gray-900 transition-colors whitespace-nowrap"
-                      >
-                        전액
-                      </button>
-                    </div>
-                    <div className="flex justify-between mt-2 text-xs text-zinc-400">
-                      <span>포인트 -{pointUsed.toLocaleString()}P</span>
-                      <span>결제 <span className="font-semibold text-gray-900">{finalAmount.toLocaleString()}원</span></span>
-                    </div>
-                  </div>
-                )}
 
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => checkRank()}
-                    className="flex-1 py-3 border border-gray-300 text-sm font-medium hover:border-gray-900 transition-colors"
-                  >
-                    순위 확인
-                  </button>
-                  {rankData?.data?.status === "ACTIVE" && (
+                    {/* 포인트 사용 */}
+                    <div className="border border-gray-200 p-4">
+                      <div className="flex items-center justify-between mb-3">
+                        <span className="text-sm font-medium">포인트 사용</span>
+                        <span className="text-xs text-zinc-400">
+                          보유 <span className="font-semibold text-zinc-700">{pointBalance.toLocaleString()}</span>P
+                        </span>
+                      </div>
+                      <div className="flex gap-2">
+                        <input
+                          type="number"
+                          min={0}
+                          max={Math.min(pointBalance, totalPrice)}
+                          value={pointInput}
+                          onChange={(e) => setPointInput(e.target.value)}
+                          placeholder="0"
+                          className="flex-1 border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:border-gray-900 transition-colors"
+                        />
+                        <button
+                          onClick={() => setPointInput(String(Math.min(pointBalance, totalPrice)))}
+                          className="px-3 py-2 text-xs font-medium border border-gray-300 hover:border-gray-900 transition-colors whitespace-nowrap"
+                        >
+                          전액
+                        </button>
+                      </div>
+                      <div className="flex justify-between mt-2 text-xs text-zinc-400">
+                        <span>포인트 -{pointUsed.toLocaleString()}P</span>
+                        <span>
+                          결제{" "}
+                          <span className="font-semibold text-gray-900">{finalAmount.toLocaleString()}원</span>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 주문 버튼 */}
                     <button
-                      onClick={() => createOrder.mutate(1)}
+                      onClick={() => createOrder.mutate()}
                       disabled={createOrder.isPending}
-                      className="flex-1 py-3 bg-gray-900 text-white text-sm font-semibold hover:bg-gray-700 transition-colors disabled:opacity-40"
+                      className="w-full py-3.5 bg-gray-900 text-white text-sm font-semibold hover:bg-gray-700 transition-colors disabled:opacity-40"
                     >
-                      {createOrder.isPending ? "처리 중..." : `${finalAmount.toLocaleString()}원 주문`}
+                      {createOrder.isPending
+                        ? "처리 중..."
+                        : `${finalAmount.toLocaleString()}원 주문 (${quantity}개)`}
                     </button>
-                  )}
-                </div>
+                  </>
+                )}
               </div>
             )}
 
-            {deal.status !== "ACTIVE" && (
+            {/* 비활성 상태 */}
+            {!isActive && (
               <div className="py-3 text-center text-sm text-zinc-400 bg-gray-50">
                 {deal.status === "SCHEDULED" ? "아직 시작 전입니다" : "종료된 타임딜입니다"}
               </div>

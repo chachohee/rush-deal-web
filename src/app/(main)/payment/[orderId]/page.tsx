@@ -18,7 +18,7 @@ export default function PaymentPage() {
   const [status, setStatus] = useState<"idle" | "preparing" | "paying" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
 
-  const currentStep = status === "idle" || status === "error" ? 0 : status === "preparing" ? 1 : status === "paying" ? 1 : 2;
+  const currentStep = status === "idle" || status === "error" ? 0 : 1;
 
   useEffect(() => {
     if (!user) router.replace("/login");
@@ -81,15 +81,15 @@ export default function PaymentPage() {
     }
   };
 
-  if (isLoading) return <div className="max-w-md mx-auto h-64 bg-gray-100 rounded-2xl animate-pulse" />;
+  if (isLoading) return <div className="max-w-md mx-auto h-64 bg-gray-100 animate-pulse" />;
 
-  if (!order) return <div className="text-center py-20 text-gray-400">주문을 찾을 수 없습니다</div>;
+  if (!order) return <div className="text-center py-20 text-zinc-400 text-sm">주문을 찾을 수 없습니다</div>;
 
   if (order.status !== "PENDING_PAYMENT") {
     return (
       <div className="max-w-md mx-auto text-center py-20">
-        <p className="text-gray-400 mb-4">결제할 수 없는 주문입니다.</p>
-        <button onClick={() => router.push(`/orders/${orderId}`)} className="text-sky-500 font-medium hover:underline">
+        <p className="text-zinc-400 text-sm mb-4">결제할 수 없는 주문입니다.</p>
+        <button onClick={() => router.push(`/orders/${orderId}`)} className="text-sm font-medium hover:text-blue-600 transition-colors">
           주문 상세 보기
         </button>
       </div>
@@ -98,95 +98,96 @@ export default function PaymentPage() {
 
   return (
     <div className="max-w-md mx-auto">
-      <button onClick={() => router.back()} className="text-sm text-gray-400 hover:text-gray-600 mb-4">
+      <button onClick={() => router.back()} className="text-xs text-zinc-400 hover:text-zinc-700 mb-6 tracking-wide transition-colors">
         ← 돌아가기
       </button>
-      <h1 className="text-2xl font-bold mb-6">결제하기</h1>
 
       {/* 단계 표시 */}
-      <div className="flex items-center mb-6">
+      <div className="flex items-center mb-8">
         {STEPS.map((step, i) => (
           <div key={step} className="flex items-center flex-1 last:flex-none">
             <div className="flex flex-col items-center">
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                i <= currentStep ? "bg-sky-500 text-white" : "bg-gray-200 text-gray-400"
+              <div className={`w-6 h-6 flex items-center justify-center text-xs font-bold transition-colors ${
+                i <= currentStep ? "bg-gray-900 text-white" : "bg-gray-200 text-zinc-400"
               }`}>
                 {i < currentStep ? "✓" : i + 1}
               </div>
-              <span className={`text-xs mt-1 whitespace-nowrap ${i <= currentStep ? "text-sky-500 font-medium" : "text-gray-400"}`}>
+              <span className={`text-xs mt-1 whitespace-nowrap ${i <= currentStep ? "text-gray-900 font-medium" : "text-zinc-400"}`}>
                 {step}
               </span>
             </div>
             {i < STEPS.length - 1 && (
-              <div className={`flex-1 h-0.5 mx-2 mb-4 transition-colors ${i < currentStep ? "bg-sky-500" : "bg-gray-200"}`} />
+              <div className={`flex-1 h-px mx-2 mb-4 transition-colors ${i < currentStep ? "bg-gray-900" : "bg-gray-200"}`} />
             )}
           </div>
         ))}
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col gap-5">
+      <div className="bg-white border border-gray-200 flex flex-col gap-0">
         {/* 주문 상품 */}
-        <div>
-          <p className="text-sm font-semibold text-gray-700 mb-3">주문 상품</p>
+        <div className="p-6 border-b border-gray-100">
+          <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">주문 상품</p>
           <div className="flex flex-col gap-2">
             {order.items?.map((item: any) => (
               <div key={item.orderItemId} className="flex justify-between text-sm">
-                <span className="text-gray-700">
+                <span className="text-zinc-700">
                   {item.productSnapshot?.productName}
-                  <span className="text-gray-400 ml-1">× {item.quantity}</span>
+                  <span className="text-zinc-400 ml-1">× {item.quantity}</span>
                 </span>
-                <span className="font-medium">{item.subtotal?.toLocaleString()}원</span>
+                <span className="font-medium tabular-nums">{item.subtotal?.toLocaleString()}원</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* 금액 상세 */}
-        <div className="border-t border-gray-100 pt-4 flex flex-col gap-1.5 text-sm">
-          <div className="flex justify-between text-gray-500">
+        <div className="px-6 py-4 bg-gray-50 border-b border-gray-100 flex flex-col gap-1.5">
+          <div className="flex justify-between text-xs text-zinc-500">
             <span>상품 금액</span>
-            <span>{order.totalAmount?.toLocaleString()}원</span>
+            <span className="tabular-nums">{order.totalAmount?.toLocaleString()}원</span>
           </div>
           {order.pointUsed > 0 && (
-            <div className="flex justify-between text-blue-500">
+            <div className="flex justify-between text-xs text-zinc-500">
               <span>포인트 사용</span>
-              <span>-{order.pointUsed?.toLocaleString()}P</span>
+              <span className="tabular-nums">-{order.pointUsed?.toLocaleString()}P</span>
             </div>
           )}
-          <div className="flex justify-between font-bold text-base mt-1">
+          <div className="flex justify-between text-sm font-bold pt-1 border-t border-gray-200 mt-1">
             <span>최종 결제금액</span>
-            <span className="text-sky-500">{order.finalAmount?.toLocaleString()}원</span>
+            <span className="tabular-nums text-blue-600">{order.finalAmount?.toLocaleString()}원</span>
           </div>
         </div>
 
         {/* 배송지 */}
         {order.shippingInfo && (
-          <div className="border-t border-gray-100 pt-4">
-            <p className="text-sm font-semibold text-gray-700 mb-2">배송지</p>
-            <div className="text-sm text-gray-600 flex flex-col gap-0.5">
-              <p>{order.shippingInfo.recipientName} · {order.shippingInfo.recipientPhone}</p>
-              <p>{order.shippingInfo.address}</p>
-            </div>
+          <div className="px-6 py-4 border-b border-gray-100">
+            <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">배송지</p>
+            <p className="text-sm text-zinc-700">{order.shippingInfo.recipientName} · {order.shippingInfo.recipientPhone}</p>
+            <p className="text-sm text-zinc-500">
+              {order.shippingInfo.addressBase ?? order.shippingInfo.address}
+              {order.shippingInfo.addressDetail ? ` ${order.shippingInfo.addressDetail}` : ""}
+            </p>
           </div>
         )}
 
         {errorMsg && (
-          <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+          <div className="mx-6 my-4 px-4 py-3 border border-red-200 bg-red-50 text-sm text-red-600">
             {errorMsg}
           </div>
         )}
 
-        <button
-          onClick={handlePay}
-          disabled={status === "preparing" || status === "paying"}
-          className="w-full py-3.5 bg-sky-500 text-white rounded-xl font-semibold hover:bg-sky-600 transition disabled:opacity-50 text-base"
-        >
-          {status === "preparing" && "결제 준비 중..."}
-          {status === "paying" && "결제창 진행 중..."}
-          {(status === "idle" || status === "error") && `${order.finalAmount?.toLocaleString()}원 결제하기`}
-        </button>
-
-        <p className="text-xs text-gray-400 text-center">PortOne을 통해 안전하게 결제됩니다</p>
+        <div className="p-6">
+          <button
+            onClick={handlePay}
+            disabled={status === "preparing" || status === "paying"}
+            className="w-full py-3.5 bg-gray-900 text-white font-semibold hover:bg-gray-700 transition-colors disabled:opacity-40 text-sm"
+          >
+            {status === "preparing" && "결제 준비 중..."}
+            {status === "paying" && "결제창 진행 중..."}
+            {(status === "idle" || status === "error") && `${order.finalAmount?.toLocaleString()}원 결제하기`}
+          </button>
+          <p className="text-xs text-zinc-400 text-center mt-3">PortOne을 통해 안전하게 결제됩니다</p>
+        </div>
       </div>
     </div>
   );

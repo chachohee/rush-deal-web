@@ -1,4 +1,5 @@
 import axios from "axios";
+import { useAuthStore } from "@/store/authStore";
 
 // 브라우저에서는 Next.js rewrites를 통해 프록시, SSR에서는 직접 호출
 const baseURL =
@@ -22,7 +23,7 @@ api.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       if (typeof window !== "undefined") {
-        localStorage.removeItem("accessToken");
+        useAuthStore.getState().clearAuth();
         window.location.href = "/login";
       }
     }

@@ -10,7 +10,6 @@ import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/axios";
 import { useToast } from "@/components/ui/Toast";
 
-/* ── 타입 ── */
 interface ShippingAddress {
   addressId: number;
   recipientName: string;
@@ -22,7 +21,6 @@ interface ShippingAddress {
   isDefault: boolean;
 }
 
-/* ── 스키마 ── */
 const profileSchema = z.object({
   name: z.string().min(1, "이름을 입력해주세요"),
   password: z.string().optional()
@@ -45,10 +43,10 @@ const ROLE_LABEL: Record<string, string> = {
   USER: "일반회원", SELLER: "판매자", MASTER: "관리자",
 };
 
-const inputCls = "w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400";
+const inputCls = "w-full border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-gray-900 transition-colors";
+const labelCls = "block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5";
 
-/* ── 배송지 폼 컴포넌트 ── */
-function AddressForm({
+function AddressFormComp({
   defaultValues,
   onSubmit,
   onCancel,
@@ -68,42 +66,42 @@ function AddressForm({
     <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-3">
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">수령인</label>
+          <label className={labelCls}>수령인</label>
           <input {...register("recipientName")} className={inputCls} />
-          {errors.recipientName && <p className="text-red-500 text-xs mt-0.5">{errors.recipientName.message}</p>}
+          {errors.recipientName && <p className="text-red-500 text-xs mt-1">{errors.recipientName.message}</p>}
         </div>
         <div>
-          <label className="block text-xs font-medium text-gray-600 mb-1">휴대폰 (하이픈 없이)</label>
+          <label className={labelCls}>휴대폰</label>
           <input {...register("recipientPhone")} placeholder="01012345678" className={inputCls} />
-          {errors.recipientPhone && <p className="text-red-500 text-xs mt-0.5">{errors.recipientPhone.message}</p>}
+          {errors.recipientPhone && <p className="text-red-500 text-xs mt-1">{errors.recipientPhone.message}</p>}
         </div>
       </div>
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">우편번호</label>
+        <label className={labelCls}>우편번호</label>
         <input {...register("zipCode")} placeholder="12345" maxLength={5} className={inputCls} />
-        {errors.zipCode && <p className="text-red-500 text-xs mt-0.5">{errors.zipCode.message}</p>}
+        {errors.zipCode && <p className="text-red-500 text-xs mt-1">{errors.zipCode.message}</p>}
       </div>
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">기본 주소</label>
+        <label className={labelCls}>기본 주소</label>
         <input {...register("addressBase")} className={inputCls} />
-        {errors.addressBase && <p className="text-red-500 text-xs mt-0.5">{errors.addressBase.message}</p>}
+        {errors.addressBase && <p className="text-red-500 text-xs mt-1">{errors.addressBase.message}</p>}
       </div>
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">상세 주소</label>
+        <label className={labelCls}>상세 주소</label>
         <input {...register("addressDetail")} className={inputCls} />
-        {errors.addressDetail && <p className="text-red-500 text-xs mt-0.5">{errors.addressDetail.message}</p>}
+        {errors.addressDetail && <p className="text-red-500 text-xs mt-1">{errors.addressDetail.message}</p>}
       </div>
       <div>
-        <label className="block text-xs font-medium text-gray-600 mb-1">배송 메시지 (선택)</label>
+        <label className={labelCls}>배송 메시지 (선택)</label>
         <input {...register("deliveryMessage")} placeholder="문 앞에 놓아주세요" className={inputCls} />
       </div>
       <div className="flex gap-2 pt-1">
         <button type="submit" disabled={isPending}
-          className="flex-1 py-2 bg-sky-500 text-white rounded-xl text-sm font-semibold hover:bg-sky-600 transition disabled:opacity-50">
+          className="flex-1 py-2.5 bg-gray-900 text-white text-sm font-semibold hover:bg-gray-700 transition-colors disabled:opacity-40">
           {isPending ? "저장 중..." : "저장"}
         </button>
         <button type="button" onClick={onCancel}
-          className="flex-1 py-2 border border-gray-300 text-gray-600 rounded-xl text-sm font-medium hover:bg-gray-50 transition">
+          className="flex-1 py-2.5 border border-gray-300 text-sm font-medium text-zinc-600 hover:border-gray-900 hover:text-gray-900 transition-colors">
           취소
         </button>
       </div>
@@ -111,7 +109,6 @@ function AddressForm({
   );
 }
 
-/* ── 메인 페이지 ── */
 export default function MyPage() {
   const router = useRouter();
   const { user, updateName, clearAuth } = useAuthStore();
@@ -122,11 +119,20 @@ export default function MyPage() {
   const [editingAddressId, setEditingAddressId] = useState<number | "new" | null>(null);
   const { toast } = useToast();
 
+  const { data: pointData } = useQuery({
+    queryKey: ["point-balance"],
+    queryFn: async () => {
+      const res = await api.get("/api/v1/points/balance");
+      return res.data;
+    },
+    enabled: !!user,
+  });
+  const pointBalance: number = pointData?.balance ?? pointData?.data?.balance ?? 0;
+
   useEffect(() => {
     if (!user) router.replace("/login");
   }, [user, router]);
 
-  /* 배송지 목록 */
   const { data: addresses = [] } = useQuery<ShippingAddress[]>({
     queryKey: ["shipping-addresses"],
     queryFn: async () => {
@@ -136,7 +142,6 @@ export default function MyPage() {
     enabled: !!user,
   });
 
-  /* 배송지 추가 */
   const createAddress = useMutation({
     mutationFn: (data: AddressForm) => api.post("/api/v1/users/me/addresses", data),
     onSuccess: () => {
@@ -147,7 +152,6 @@ export default function MyPage() {
     onError: () => toast("배송지 추가에 실패했습니다", "error"),
   });
 
-  /* 배송지 수정 */
   const updateAddress = useMutation({
     mutationFn: ({ id, data }: { id: number; data: AddressForm }) =>
       api.put(`/api/v1/users/me/addresses/${id}`, data),
@@ -159,7 +163,6 @@ export default function MyPage() {
     onError: () => toast("배송지 수정에 실패했습니다", "error"),
   });
 
-  /* 기본배송지 설정 */
   const setDefault = useMutation({
     mutationFn: (id: number) => api.patch(`/api/v1/users/me/addresses/${id}/default`),
     onSuccess: () => {
@@ -168,7 +171,6 @@ export default function MyPage() {
     },
   });
 
-  /* 배송지 삭제 */
   const deleteAddress = useMutation({
     mutationFn: (id: number) => api.delete(`/api/v1/users/me/addresses/${id}`),
     onSuccess: () => {
@@ -177,7 +179,6 @@ export default function MyPage() {
     },
   });
 
-  /* 프로필 폼 */
   const { register, handleSubmit, reset, formState: { errors, isSubmitting }, setError } =
     useForm<ProfileForm>({
       resolver: zodResolver(profileSchema),
@@ -205,20 +206,24 @@ export default function MyPage() {
   if (!user) return null;
 
   return (
-    <div className="max-w-lg mx-auto flex flex-col gap-4">
-      <h1 className="text-2xl font-bold">마이페이지</h1>
+    <div className="max-w-lg mx-auto flex flex-col gap-px bg-gray-200">
 
-      {/* ── 프로필 카드 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 divide-y divide-gray-200">
-        <div className="p-6 flex items-center gap-4">
-          <div className="w-14 h-14 rounded-full bg-sky-100 flex items-center justify-center text-2xl font-bold text-sky-500 shrink-0">
+      {/* 프로필 */}
+      <div className="bg-white">
+        <div className="flex items-center gap-4 p-6 border-b border-gray-100">
+          <div className="w-12 h-12 bg-gray-900 flex items-center justify-center text-white text-lg font-bold shrink-0">
             {user.name?.[0] ?? "?"}
           </div>
-          <div>
-            <p className="font-bold text-lg">{user.name}</p>
-            <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-sky-50 text-sky-500">
-              {ROLE_LABEL[user.role] ?? user.role}
-            </span>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-base">{user.name}</p>
+            <p className="text-xs text-zinc-400 mt-0.5">{ROLE_LABEL[user.role] ?? user.role}</p>
+          </div>
+          <div className="text-right shrink-0">
+            <p className="text-xs text-zinc-400 mb-0.5">보유 포인트</p>
+            <p className="text-base font-bold tabular-nums">
+              {pointBalance.toLocaleString()}
+              <span className="text-xs font-normal text-zinc-400 ml-0.5">P</span>
+            </p>
           </div>
         </div>
 
@@ -226,29 +231,30 @@ export default function MyPage() {
           {isEditingProfile ? (
             <form onSubmit={handleSubmit(onProfileSubmit)} className="flex flex-col gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">이름</label>
+                <label className={labelCls}>이름</label>
                 <input {...register("name")} className={inputCls} />
                 {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  새 비밀번호 <span className="text-gray-400 font-normal">(변경 시에만 입력)</span>
+                <label className={labelCls}>
+                  새 비밀번호 <span className="normal-case font-normal text-zinc-400">(변경 시에만 입력)</span>
                 </label>
                 <input {...register("password")} type="password" placeholder="8자 이상" className={inputCls} />
                 {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">이메일</label>
-                <p className="text-sm text-gray-400 py-2">{user.email}</p>
+                <label className={labelCls}>이메일</label>
+                <p className="text-sm text-zinc-400 py-2">{user.email}</p>
               </div>
-              {errors.root && <p className="text-red-500 text-sm">{errors.root.message}</p>}
+              {errors.root && <p className="text-red-500 text-xs">{errors.root.message}</p>}
               <div className="flex gap-2">
                 <button type="submit" disabled={isSubmitting}
-                  className="flex-1 py-2.5 bg-sky-500 text-white rounded-xl font-semibold hover:bg-sky-600 transition disabled:opacity-50">
+                  className="flex-1 py-2.5 bg-gray-900 text-white text-sm font-semibold hover:bg-gray-700 transition-colors disabled:opacity-40">
                   {isSubmitting ? "저장 중..." : "저장"}
                 </button>
-                <button type="button" onClick={() => { reset({ name: user.name, password: "" }); setIsEditingProfile(false); }}
-                  className="flex-1 py-2.5 border border-gray-300 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition">
+                <button type="button"
+                  onClick={() => { reset({ name: user.name, password: "" }); setIsEditingProfile(false); }}
+                  className="flex-1 py-2.5 border border-gray-300 text-sm font-medium text-zinc-600 hover:border-gray-900 hover:text-gray-900 transition-colors">
                   취소
                 </button>
               </div>
@@ -256,15 +262,15 @@ export default function MyPage() {
           ) : (
             <div className="flex flex-col gap-3">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">이름</span>
+                <span className="text-zinc-400">이름</span>
                 <span className="font-medium">{user.name}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">이메일</span>
+                <span className="text-zinc-400">이메일</span>
                 <span className="font-medium">{user.email}</span>
               </div>
               <button onClick={() => setIsEditingProfile(true)}
-                className="mt-2 w-full py-2.5 border border-gray-300 text-gray-600 rounded-xl font-medium hover:bg-gray-50 transition text-sm">
+                className="mt-2 w-full py-2.5 border border-gray-300 text-sm font-medium text-zinc-600 hover:border-gray-900 hover:text-gray-900 transition-colors">
                 프로필 수정
               </button>
             </div>
@@ -272,24 +278,23 @@ export default function MyPage() {
         </div>
       </div>
 
-      {/* ── 배송지 관리 카드 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200">
-        <div className="px-6 py-4 flex items-center justify-between border-b border-gray-200">
-          <h2 className="font-semibold text-gray-700">배송지 관리</h2>
+      {/* 배송지 관리 */}
+      <div className="bg-white">
+        <div className="px-6 py-4 flex items-center justify-between border-b border-gray-100">
+          <h2 className="text-sm font-bold tracking-tight">배송지 관리</h2>
           {editingAddressId === null && (
             <button onClick={() => setEditingAddressId("new")}
-              className="text-sm text-sky-500 font-medium hover:underline">
-              + 배송지 추가
+              className="text-xs text-zinc-500 font-medium hover:text-gray-900 transition-colors">
+              + 추가
             </button>
           )}
         </div>
 
         <div className="p-6 flex flex-col gap-4">
-          {/* 새 배송지 폼 */}
           {editingAddressId === "new" && (
-            <div className="border border-sky-200 rounded-xl p-4 bg-sky-50">
-              <p className="text-sm font-semibold text-sky-600 mb-3">새 배송지</p>
-              <AddressForm
+            <div className="border border-gray-200 p-4">
+              <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">새 배송지</p>
+              <AddressFormComp
                 onSubmit={(data) => createAddress.mutate(data)}
                 onCancel={() => setEditingAddressId(null)}
                 isPending={createAddress.isPending}
@@ -297,18 +302,17 @@ export default function MyPage() {
             </div>
           )}
 
-          {/* 배송지 목록 */}
           {addresses.length === 0 && editingAddressId !== "new" && (
-            <p className="text-sm text-gray-400 text-center py-4">등록된 배송지가 없습니다</p>
+            <p className="text-sm text-zinc-400 text-center py-4">등록된 배송지가 없습니다</p>
           )}
 
           {addresses.map((addr) => (
             <div key={addr.addressId}
-              className={`border rounded-xl p-4 ${addr.isDefault ? "border-sky-300 bg-sky-50" : "border-gray-200"}`}>
+              className={`border p-4 ${addr.isDefault ? "border-gray-900" : "border-gray-200"}`}>
               {editingAddressId === addr.addressId ? (
                 <>
-                  <p className="text-sm font-semibold text-gray-700 mb-3">배송지 수정</p>
-                  <AddressForm
+                  <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">배송지 수정</p>
+                  <AddressFormComp
                     defaultValues={{
                       recipientName: addr.recipientName,
                       recipientPhone: addr.recipientPhone,
@@ -327,30 +331,28 @@ export default function MyPage() {
                   <div className="flex items-start justify-between gap-2">
                     <div>
                       {addr.isDefault && (
-                        <span className="text-xs font-semibold text-sky-500 bg-sky-100 px-2 py-0.5 rounded-full mr-2">
-                          기본
-                        </span>
+                        <span className="text-xs font-semibold text-blue-600 mr-2">기본</span>
                       )}
                       <span className="text-sm font-semibold">{addr.recipientName}</span>
-                      <span className="text-sm text-gray-500 ml-2">{addr.recipientPhone}</span>
+                      <span className="text-sm text-zinc-400 ml-2">{addr.recipientPhone}</span>
                     </div>
-                    <div className="flex gap-2 shrink-0">
+                    <div className="flex gap-3 shrink-0">
                       <button onClick={() => setEditingAddressId(addr.addressId)}
-                        className="text-xs text-gray-500 hover:text-gray-700">수정</button>
+                        className="text-xs text-zinc-400 hover:text-gray-900 transition-colors">수정</button>
                       <button
                         onClick={() => { if (confirm("배송지를 삭제하시겠습니까?")) deleteAddress.mutate(addr.addressId); }}
-                        className="text-xs text-red-400 hover:text-red-600">삭제</button>
+                        className="text-xs text-red-400 hover:text-red-600 transition-colors">삭제</button>
                     </div>
                   </div>
-                  <p className="text-sm text-gray-600 mt-1">
+                  <p className="text-sm text-zinc-600 mt-1.5">
                     [{addr.zipCode}] {addr.addressBase}, {addr.addressDetail}
                   </p>
                   {addr.deliveryMessage && (
-                    <p className="text-xs text-gray-400 mt-0.5">{addr.deliveryMessage}</p>
+                    <p className="text-xs text-zinc-400 mt-0.5">{addr.deliveryMessage}</p>
                   )}
                   {!addr.isDefault && (
                     <button onClick={() => setDefault.mutate(addr.addressId)}
-                      className="mt-2 text-xs text-sky-500 hover:underline">
+                      className="mt-2 text-xs text-zinc-400 hover:text-blue-600 transition-colors">
                       기본 배송지로 설정
                     </button>
                   )}
@@ -361,19 +363,20 @@ export default function MyPage() {
         </div>
       </div>
 
-      {/* ── 메뉴 */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 flex flex-col gap-1">
+      {/* 메뉴 */}
+      <div className="bg-white">
         <button onClick={() => router.push("/orders")}
-          className="w-full text-left px-3 py-3 rounded-xl hover:bg-gray-50 transition text-sm font-medium flex justify-between items-center">
+          className="w-full text-left px-6 py-4 text-sm font-medium flex justify-between items-center hover:bg-gray-50 transition-colors border-b border-gray-100">
           <span>내 주문 내역</span>
-          <span className="text-gray-400">→</span>
+          <span className="text-zinc-400 text-xs">→</span>
         </button>
         <button onClick={handleLogout}
-          className="w-full text-left px-3 py-3 rounded-xl hover:bg-red-50 transition text-sm font-medium text-red-500 flex justify-between items-center">
+          className="w-full text-left px-6 py-4 text-sm font-medium text-red-500 flex justify-between items-center hover:bg-gray-50 transition-colors">
           <span>로그아웃</span>
-          <span>→</span>
+          <span className="text-xs">→</span>
         </button>
       </div>
+
     </div>
   );
 }

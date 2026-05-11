@@ -46,92 +46,95 @@ export default function OrderDetailPage() {
     onError: () => toast("구매 확정에 실패했습니다", "error"),
   });
 
-  if (isLoading) return <div className="h-64 bg-gray-100 rounded-2xl animate-pulse" />;
-  if (!order) return <div className="text-center py-20 text-gray-400">주문을 찾을 수 없습니다</div>;
+  if (isLoading) return <div className="max-w-2xl mx-auto h-64 bg-gray-100 animate-pulse" />;
+  if (!order) return <div className="text-center py-20 text-zinc-400 text-sm">주문을 찾을 수 없습니다</div>;
 
   return (
     <div className="max-w-2xl mx-auto">
-      <button onClick={() => router.back()} className="text-sm text-gray-400 hover:text-gray-600 mb-4">
+      <button onClick={() => router.back()} className="text-xs text-zinc-400 hover:text-zinc-700 mb-6 tracking-wide transition-colors">
         ← 목록으로
       </button>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col gap-5">
-        <div className="flex items-center justify-between">
-          <h1 className="text-lg font-bold">주문 상세</h1>
-          <span className="text-sm font-semibold text-sky-500">
-            {STATUS_LABEL[order.status] ?? order.status}
-          </span>
+      <div className="bg-white border border-gray-200">
+        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+          <h1 className="text-base font-bold tracking-tight">주문 상세</h1>
+          <span className="text-xs font-medium text-zinc-500">{STATUS_LABEL[order.status] ?? order.status}</span>
         </div>
 
-        <div className="text-xs text-gray-400">
-          주문번호: {order.orderId}
+        <div className="px-6 py-3 border-b border-gray-100">
+          <p className="text-xs text-zinc-400 font-mono">{order.orderId}</p>
         </div>
 
-        <div className="flex flex-col gap-3">
+        <div className="px-6">
           {order.items?.map((item: any) => (
-            <div key={item.orderItemId} className="flex justify-between items-start py-3 border-t border-gray-200">
+            <div key={item.orderItemId} className="flex justify-between items-start py-4 border-b border-gray-100 last:border-b-0">
               <div>
-                <p className="font-medium">{item.productSnapshot?.productName}</p>
-                <p className="text-sm text-gray-400 mt-0.5">{item.quantity}개</p>
+                <p className="text-sm font-medium">{item.productSnapshot?.productName}</p>
+                <p className="text-xs text-zinc-400 mt-0.5">{item.quantity}개</p>
               </div>
-              <p className="font-semibold">{item.subtotal?.toLocaleString()}원</p>
+              <p className="text-sm font-semibold tabular-nums">{item.subtotal?.toLocaleString()}원</p>
             </div>
           ))}
         </div>
 
-        <div className="border-t border-gray-200 pt-4 flex flex-col gap-1.5 text-sm">
-          <div className="flex justify-between text-gray-500">
+        <div className="px-6 py-4 border-t border-gray-200 bg-gray-50 flex flex-col gap-1.5">
+          <div className="flex justify-between text-xs text-zinc-500">
             <span>상품 금액</span>
-            <span>{order.totalAmount?.toLocaleString()}원</span>
+            <span className="tabular-nums">{order.totalAmount?.toLocaleString()}원</span>
           </div>
           {order.pointUsed > 0 && (
-            <div className="flex justify-between text-blue-500">
+            <div className="flex justify-between text-xs text-zinc-500">
               <span>포인트 사용</span>
-              <span>-{order.pointUsed?.toLocaleString()}P</span>
+              <span className="tabular-nums">-{order.pointUsed?.toLocaleString()}P</span>
             </div>
           )}
-          <div className="flex justify-between font-bold text-base mt-1">
+          <div className="flex justify-between text-sm font-bold pt-1 border-t border-gray-200 mt-1">
             <span>최종 결제금액</span>
-            <span className="text-sky-500">{order.finalAmount?.toLocaleString()}원</span>
+            <span className="tabular-nums">{order.finalAmount?.toLocaleString()}원</span>
           </div>
         </div>
 
         {order.shippingInfo && (
-          <div className="bg-gray-50 rounded-xl p-4 text-sm text-gray-600">
-            <p className="font-medium mb-1">배송지</p>
-            <p>{order.shippingInfo.recipientName} · {order.shippingInfo.recipientPhone}</p>
-            <p>{order.shippingInfo.address}</p>
+          <div className="px-6 py-4 border-t border-gray-200">
+            <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-2">배송지</p>
+            <p className="text-sm text-zinc-700">{order.shippingInfo.recipientName} · {order.shippingInfo.recipientPhone}</p>
+            <p className="text-sm text-zinc-500">
+              {order.shippingInfo.addressBase ?? order.shippingInfo.address}
+              {order.shippingInfo.addressDetail ? ` ${order.shippingInfo.addressDetail}` : ""}
+            </p>
           </div>
         )}
 
-        <div className="flex gap-2 pt-2">
-          {(order.status === "PENDING" || order.status === "PENDING_PAYMENT") && (
-            <button
-              onClick={() => cancelOrder.mutate()}
-              disabled={cancelOrder.isPending}
-              className="flex-1 py-2.5 border border-red-300 text-red-500 rounded-xl font-medium hover:bg-red-50 transition disabled:opacity-50"
-            >
-              {cancelOrder.isPending ? "취소 중..." : "주문 취소"}
-            </button>
-          )}
-          {order.status === "PENDING_PAYMENT" && (
-            <button
-              onClick={() => router.push(`/payment/${order.orderId}`)}
-              className="flex-1 py-2.5 bg-sky-500 text-white rounded-xl font-semibold hover:bg-sky-600 transition"
-            >
-              결제하기
-            </button>
-          )}
-          {order.status === "PAID" && (
-            <button
-              onClick={() => confirmPurchase.mutate()}
-              disabled={confirmPurchase.isPending}
-              className="flex-1 py-2.5 bg-sky-500 text-white rounded-xl font-semibold hover:bg-sky-600 transition disabled:opacity-50"
-            >
-              {confirmPurchase.isPending ? "처리 중..." : "구매 확정"}
-            </button>
-          )}
-        </div>
+        {(order.status === "PENDING" || order.status === "PENDING_PAYMENT" || order.status === "PAID") && (
+          <div className="flex gap-2 p-6 border-t border-gray-200">
+            {(order.status === "PENDING" || order.status === "PENDING_PAYMENT") && (
+              <button
+                onClick={() => cancelOrder.mutate()}
+                disabled={cancelOrder.isPending}
+                className="flex-1 py-3 border border-gray-300 text-sm font-medium text-zinc-600 hover:border-gray-900 hover:text-gray-900 transition-colors disabled:opacity-40"
+              >
+                {cancelOrder.isPending ? "취소 중..." : "주문 취소"}
+              </button>
+            )}
+            {order.status === "PENDING_PAYMENT" && (
+              <button
+                onClick={() => router.push(`/payment/${order.orderId}`)}
+                className="flex-1 py-3 bg-gray-900 text-white text-sm font-semibold hover:bg-gray-700 transition-colors"
+              >
+                결제하기
+              </button>
+            )}
+            {order.status === "PAID" && (
+              <button
+                onClick={() => confirmPurchase.mutate()}
+                disabled={confirmPurchase.isPending}
+                className="flex-1 py-3 bg-gray-900 text-white text-sm font-semibold hover:bg-gray-700 transition-colors disabled:opacity-40"
+              >
+                {confirmPurchase.isPending ? "처리 중..." : "구매 확정"}
+              </button>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

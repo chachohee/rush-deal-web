@@ -48,54 +48,54 @@ export default function SellerProductsPage() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">상품 관리</h1>
+        <h1 className="text-2xl font-bold tracking-tight">상품 관리</h1>
         <Link
           href="/seller/products/new"
-          className="px-4 py-2 bg-sky-500 text-white rounded-xl font-semibold hover:bg-sky-600 transition text-sm"
+          className="px-4 py-2 bg-gray-900 text-white text-sm font-semibold hover:bg-gray-700 transition-colors"
         >
           + 상품 등록
         </Link>
       </div>
 
       {isLoading ? (
-        <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-px bg-gray-200">
           {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-20 bg-gray-100 rounded-2xl animate-pulse" />
+            <div key={i} className="h-16 bg-gray-100 animate-pulse" />
           ))}
         </div>
       ) : products.length === 0 ? (
-        <div className="text-center py-20 text-gray-400">
+        <div className="text-center py-20 text-zinc-400 text-sm">
           <p className="mb-4">등록된 상품이 없어요</p>
-          <Link href="/seller/products/new" className="text-sky-500 font-medium hover:underline">
+          <Link href="/seller/products/new" className="text-blue-600 font-medium hover:underline">
             첫 상품 등록하기
           </Link>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-x-auto">
+        <div className="bg-white border border-gray-200 overflow-x-auto">
           <table className="w-full text-sm min-w-[600px]">
-            <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+            <thead className="bg-gray-50 text-zinc-500 text-xs">
               <tr>
-                <th className="px-5 py-3 text-left">상품명</th>
-                <th className="px-5 py-3 text-left">회사명</th>
-                <th className="px-5 py-3 text-left">가격</th>
-                <th className="px-5 py-3 text-left">카테고리</th>
-                <th className="px-5 py-3 text-left">액션</th>
+                <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">상품명</th>
+                <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">회사명</th>
+                <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">가격</th>
+                <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">카테고리</th>
+                <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">액션</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-100">
               {products.map((p: any) => (
-                <tr key={p.productId} className="hover:bg-gray-50 transition">
+                <tr key={p.productId} className="hover:bg-gray-50 transition-colors">
                   <td className="px-5 py-3 font-medium">{p.productName}</td>
-                  <td className="px-5 py-3 text-gray-700">{p.companyName}</td>
-                  <td className="px-5 py-3 text-sky-500 font-semibold">
+                  <td className="px-5 py-3 text-zinc-600">{p.companyName}</td>
+                  <td className="px-5 py-3 font-semibold tabular-nums">
                     {p.price?.toLocaleString()}원
                   </td>
-                  <td className="px-5 py-3 text-gray-700">{p.category}</td>
+                  <td className="px-5 py-3 text-zinc-600">{p.category}</td>
                   <td className="px-5 py-3">
                     <div className="flex gap-2">
                       <Link
                         href={`/seller/products/${p.productId}/edit`}
-                        className="text-xs px-3 py-1.5 border border-gray-300 text-gray-600 rounded-lg hover:bg-gray-50 transition"
+                        className="text-xs px-3 py-1.5 border border-gray-300 text-zinc-600 hover:border-gray-900 hover:text-gray-900 transition-colors"
                       >
                         수정
                       </Link>
@@ -103,7 +103,7 @@ export default function SellerProductsPage() {
                         <button
                           onClick={() => enableMutation.mutate(p.productId)}
                           disabled={enableMutation.isPending}
-                          className="text-xs px-3 py-1.5 border border-blue-300 text-blue-500 rounded-lg hover:bg-blue-50 transition disabled:opacity-50"
+                          className="text-xs px-3 py-1.5 border border-gray-300 text-blue-600 hover:border-blue-600 transition-colors disabled:opacity-40"
                         >
                           활성화
                         </button>
@@ -111,7 +111,7 @@ export default function SellerProductsPage() {
                         <button
                           onClick={() => disableMutation.mutate(p.productId)}
                           disabled={disableMutation.isPending}
-                          className="text-xs px-3 py-1.5 border border-yellow-300 text-yellow-600 rounded-lg hover:bg-yellow-50 transition disabled:opacity-50"
+                          className="text-xs px-3 py-1.5 border border-gray-300 text-zinc-600 hover:border-gray-900 hover:text-gray-900 transition-colors disabled:opacity-40"
                         >
                           비활성화
                         </button>
@@ -123,7 +123,7 @@ export default function SellerProductsPage() {
                           }
                         }}
                         disabled={deleteMutation.isPending}
-                        className="text-xs px-3 py-1.5 border border-red-300 text-red-500 rounded-lg hover:bg-red-50 transition disabled:opacity-50"
+                        className="text-xs px-3 py-1.5 border border-gray-300 text-red-400 hover:border-red-400 hover:text-red-600 transition-colors disabled:opacity-40"
                       >
                         삭제
                       </button>

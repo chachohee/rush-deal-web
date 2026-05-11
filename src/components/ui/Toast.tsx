@@ -30,7 +30,7 @@ const ICONS: Record<ToastType, string> = {
 const COLORS: Record<ToastType, string> = {
   success: "bg-green-500",
   error: "bg-red-500",
-  info: "bg-sky-500",
+  info: "bg-blue-600",
 };
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
@@ -66,11 +66,11 @@ function ToastItem({ item }: { item: ToastItem }) {
 
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-3 rounded-xl text-white text-sm font-medium shadow-lg pointer-events-auto
+      className={`flex items-center gap-3 px-4 py-3 text-white text-sm font-medium shadow-lg pointer-events-auto
         transition-all duration-300 ${COLORS[item.type]}
         ${visible ? "opacity-100 translate-x-0" : "opacity-0 translate-x-8"}`}
     >
-      <span className="w-5 h-5 rounded-full bg-white/20 flex items-center justify-center text-xs font-bold shrink-0">
+      <span className="w-5 h-5 bg-white/20 flex items-center justify-center text-xs font-bold shrink-0">
         {ICONS[item.type]}
       </span>
       {item.message}

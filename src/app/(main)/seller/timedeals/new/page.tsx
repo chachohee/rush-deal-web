@@ -22,6 +22,9 @@ const schema = z.object({
 
 type FormData = z.infer<typeof schema>;
 
+const inputCls = "w-full border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-gray-900 transition-colors bg-white";
+const labelCls = "block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5";
+
 export default function NewTimeDealPage() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
@@ -69,19 +72,18 @@ export default function NewTimeDealPage() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <button onClick={() => router.back()} className="text-sm text-gray-400 hover:text-gray-600 mb-4">
+      <button onClick={() => router.back()} className="text-xs text-zinc-400 hover:text-zinc-700 mb-6 tracking-wide transition-colors">
         ← 목록으로
       </button>
-      <h1 className="text-2xl font-bold mb-6">타임딜 등록</h1>
+      <h1 className="text-2xl font-bold tracking-tight mb-6">타임딜 등록</h1>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 flex flex-col gap-4">
-          <h2 className="font-semibold text-gray-700">기본 정보</h2>
+      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-px bg-gray-200">
+        <div className="bg-white p-6 flex flex-col gap-4">
+          <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">기본 정보</p>
 
           <div>
-            <label className="block text-sm font-medium mb-1">상품 선택</label>
-            <select {...register("productId")}
-              className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400 bg-white">
+            <label className={labelCls}>상품 선택</label>
+            <select {...register("productId")} className={inputCls}>
               <option value="">상품을 선택해주세요</option>
               {products.map((p: any) => (
                 <option key={p.productId} value={p.productId}>
@@ -93,65 +95,59 @@ export default function NewTimeDealPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">타임딜 제목</label>
-            <input {...register("title")} placeholder="타임딜 제목을 입력해주세요"
-              className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400" />
+            <label className={labelCls}>타임딜 제목</label>
+            <input {...register("title")} placeholder="타임딜 제목을 입력해주세요" className={inputCls} />
             {errors.title && <p className="text-red-500 text-xs mt-1">{errors.title.message}</p>}
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">설명</label>
+            <label className={labelCls}>설명</label>
             <textarea {...register("description")} rows={3} placeholder="타임딜 설명을 입력해주세요"
-              className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400 resize-none" />
+              className={inputCls + " resize-none"} />
             {errors.description && <p className="text-red-500 text-xs mt-1">{errors.description.message}</p>}
           </div>
 
           <div className="flex gap-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium mb-1">할인가 (원)</label>
-              <input {...register("discountPrice", { valueAsNumber: true })} type="number" min={0} placeholder="0"
-                className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400" />
+              <label className={labelCls}>할인가 (원)</label>
+              <input {...register("discountPrice", { valueAsNumber: true })} type="number" min={0} placeholder="0" className={inputCls} />
               {errors.discountPrice && <p className="text-red-500 text-xs mt-1">{errors.discountPrice.message}</p>}
             </div>
 
             <div className="flex-1">
-              <label className="block text-sm font-medium mb-1">인당 구매 제한</label>
-              <input {...register("limitQuantity", { valueAsNumber: true })} type="number" min={1} placeholder="1"
-                className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400" />
+              <label className={labelCls}>인당 구매 제한</label>
+              <input {...register("limitQuantity", { valueAsNumber: true })} type="number" min={1} placeholder="1" className={inputCls} />
               {errors.limitQuantity && <p className="text-red-500 text-xs mt-1">{errors.limitQuantity.message}</p>}
             </div>
           </div>
 
           <div className="flex gap-4">
             <div className="flex-1">
-              <label className="block text-sm font-medium mb-1">시작 시간</label>
-              <input {...register("startAt")} type="datetime-local"
-                className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400" />
+              <label className={labelCls}>시작 시간</label>
+              <input {...register("startAt")} type="datetime-local" className={inputCls} />
               {errors.startAt && <p className="text-red-500 text-xs mt-1">{errors.startAt.message}</p>}
             </div>
 
             <div className="flex-1">
-              <label className="block text-sm font-medium mb-1">종료 시간</label>
-              <input {...register("endAt")} type="datetime-local"
-                className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400" />
+              <label className={labelCls}>종료 시간</label>
+              <input {...register("endAt")} type="datetime-local" className={inputCls} />
               {errors.endAt && <p className="text-red-500 text-xs mt-1">{errors.endAt.message}</p>}
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium mb-1">초기 상태</label>
-            <select {...register("status")}
-              className="w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400 bg-white">
+            <label className={labelCls}>초기 상태</label>
+            <select {...register("status")} className={inputCls}>
               <option value="SCHEDULED">예정 (등록 후 시작 시간에 자동 시작)</option>
               <option value="IN_PROGRESS">즉시 시작</option>
             </select>
           </div>
         </div>
 
-        {errors.root && <p className="text-red-500 text-sm text-center">{errors.root.message}</p>}
+        {errors.root && <p className="text-red-500 text-xs text-center py-2 bg-white">{errors.root.message}</p>}
 
         <button type="submit" disabled={isSubmitting}
-          className="w-full py-3 bg-sky-500 text-white rounded-xl font-semibold hover:bg-sky-600 transition disabled:opacity-50">
+          className="w-full py-3.5 bg-gray-900 text-white text-sm font-semibold hover:bg-gray-700 transition-colors disabled:opacity-40">
           {isSubmitting ? "등록 중..." : "타임딜 등록"}
         </button>
       </form>

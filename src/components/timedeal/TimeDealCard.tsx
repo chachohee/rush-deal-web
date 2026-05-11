@@ -4,10 +4,11 @@ import Link from "next/link";
 import { useCountdown } from "@/hooks/useCountdown";
 
 const STATUS_STYLE: Record<string, { label: string; dot: string }> = {
-  ACTIVE:    { label: "진행중",   dot: "bg-blue-500" },
-  SCHEDULED: { label: "진행예정", dot: "bg-zinc-400" },
-  SOLD_OUT:  { label: "품절",     dot: "bg-red-400" },
-  ENDED:     { label: "마감",     dot: "bg-zinc-300" },
+  ACTIVE:      { label: "진행중",   dot: "bg-blue-500" },
+  IN_PROGRESS: { label: "진행중",   dot: "bg-blue-500" },
+  SCHEDULED:   { label: "진행예정", dot: "bg-zinc-400" },
+  SOLD_OUT:    { label: "품절",     dot: "bg-red-400" },
+  ENDED:       { label: "마감",     dot: "bg-zinc-300" },
 };
 
 function pad(n: number) { return String(n).padStart(2, "0"); }
@@ -24,7 +25,8 @@ function Countdown({ targetIso, label }: { targetIso: string; label: string }) {
 
 interface Props {
   deal: {
-    id: string;
+    id?: string;
+    timeDealId?: string;
     title: string;
     description: string;
     discountPrice: number;
@@ -35,8 +37,9 @@ interface Props {
 }
 
 export default function TimeDealCard({ deal }: Props) {
+  const dealId = deal.id ?? deal.timeDealId ?? "";
   const status = STATUS_STYLE[deal.status] ?? { label: deal.status, dot: "bg-zinc-300" };
-  const isClickable = deal.status === "ACTIVE" || deal.status === "SCHEDULED";
+  const isClickable = deal.status === "ACTIVE" || deal.status === "IN_PROGRESS" || deal.status === "SCHEDULED";
   const isEnded = deal.status === "ENDED" || deal.status === "SOLD_OUT";
 
   const card = (
@@ -60,7 +63,7 @@ export default function TimeDealCard({ deal }: Props) {
             <span className={`w-1.5 h-1.5 rounded-full ${status.dot}`} />
             <span className="text-xs text-zinc-500">{status.label}</span>
           </div>
-          {deal.status === "ACTIVE" && <Countdown targetIso={deal.endAt} label="종료" />}
+          {(deal.status === "ACTIVE" || deal.status === "IN_PROGRESS") && <Countdown targetIso={deal.endAt} label="종료" />}
           {deal.status === "SCHEDULED" && <Countdown targetIso={deal.startAt} label="시작" />}
         </div>
 
@@ -76,5 +79,5 @@ export default function TimeDealCard({ deal }: Props) {
     </div>
   );
 
-  return isClickable ? <Link href={`/timedeals/${deal.id}`}>{card}</Link> : card;
+  return isClickable ? <Link href={`/timedeals/${dealId}`}>{card}</Link> : card;
 }

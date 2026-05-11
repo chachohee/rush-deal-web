@@ -8,22 +8,22 @@ import api from "@/lib/axios";
 
 type Tab = "users" | "timedeals" | "queue-policies";
 
-const ROLE_LABEL: Record<string, { label: string; className: string }> = {
-  USER:   { label: "일반회원", className: "text-gray-600 bg-gray-100" },
-  SELLER: { label: "판매자",   className: "text-blue-600 bg-blue-50" },
-  MASTER: { label: "관리자",   className: "text-purple-600 bg-purple-50" },
+const ROLE_DOT: Record<string, { label: string; dot: string }> = {
+  USER:   { label: "일반회원", dot: "bg-zinc-300" },
+  SELLER: { label: "판매자",   dot: "bg-blue-500" },
+  MASTER: { label: "관리자",   dot: "bg-gray-900" },
 };
 
-const DEAL_STATUS_LABEL: Record<string, { label: string; className: string }> = {
-  SCHEDULED: { label: "진행예정", className: "text-blue-600 bg-blue-50" },
-  ACTIVE:    { label: "진행중",   className: "text-green-600 bg-green-50" },
-  ENDED:     { label: "종료됨",   className: "text-gray-500 bg-gray-100" },
+const DEAL_STATUS_DOT: Record<string, { label: string; dot: string }> = {
+  SCHEDULED: { label: "예정",   dot: "bg-blue-500" },
+  ACTIVE:    { label: "진행중", dot: "bg-green-500" },
+  ENDED:     { label: "종료됨", dot: "bg-zinc-300" },
 };
 
-const POLICY_STATUS_LABEL: Record<string, { label: string; className: string }> = {
-  RUNNING: { label: "실행중",   className: "text-green-600 bg-green-50" },
-  PAUSED:  { label: "일시정지", className: "text-yellow-600 bg-yellow-50" },
-  STOPPED: { label: "중단됨",   className: "text-red-500 bg-red-50" },
+const POLICY_STATUS_DOT: Record<string, { label: string; dot: string }> = {
+  RUNNING: { label: "실행중",   dot: "bg-green-500" },
+  PAUSED:  { label: "일시정지", dot: "bg-yellow-500" },
+  STOPPED: { label: "중단됨",   dot: "bg-red-400" },
 };
 
 const EMPTY_FORM = {
@@ -37,6 +37,9 @@ const EMPTY_FORM = {
   queueGap: 5,
   ttl: 300,
 };
+
+const inputCls = "w-full border border-gray-200 px-3 py-2.5 text-sm outline-none focus:border-gray-900 transition-colors bg-white";
+const labelCls = "block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5";
 
 export default function AdminPage() {
   const router = useRouter();
@@ -127,55 +130,60 @@ export default function AdminPage() {
   const policies = policyData?.data?.content ?? policyData?.content ?? [];
   const products = productsData?.content ?? productsData?.data?.content ?? [];
 
-  const inputCls = "w-full border rounded-lg px-3 py-2 text-sm outline-none border-gray-300 focus:ring-2 focus:ring-sky-400 focus:border-sky-400";
+  const TAB_LABELS: Record<Tab, string> = {
+    users: "유저 관리",
+    timedeals: "타임딜 관리",
+    "queue-policies": "대기열 정책",
+  };
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">관리자 페이지</h1>
+      <h1 className="text-2xl font-bold tracking-tight mb-6">관리자 페이지</h1>
 
-      <div className="flex gap-1 mb-6 border-b border-gray-200">
+      <div className="flex gap-0 mb-6 border-b border-gray-200">
         {(["users", "timedeals", "queue-policies"] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
-            className={`px-5 py-2.5 text-sm font-medium border-b-2 transition ${
+            className={`px-5 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors ${
               tab === t
-                ? "border-sky-500 text-sky-500"
-                : "border-transparent text-gray-500 hover:text-gray-700"
+                ? "border-gray-900 text-gray-900"
+                : "border-transparent text-zinc-400 hover:text-gray-700"
             }`}
           >
-            {t === "users" ? "유저 관리" : t === "timedeals" ? "타임딜 관리" : "대기열 정책"}
+            {TAB_LABELS[t]}
           </button>
         ))}
       </div>
 
-      {/* ── 유저 관리 */}
+      {/* 유저 관리 */}
       {tab === "users" && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-x-auto">
+        <div className="bg-white border border-gray-200 overflow-x-auto">
           {usersLoading ? (
-            <div className="p-8 text-center text-gray-400">불러오는 중...</div>
+            <div className="p-8 text-center text-zinc-400 text-sm">불러오는 중...</div>
           ) : (
             <table className="w-full text-sm min-w-[480px]">
-              <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+              <thead className="bg-gray-50 text-zinc-500 text-xs">
                 <tr>
-                  <th className="px-5 py-3 text-left">ID</th>
-                  <th className="px-5 py-3 text-left">이름</th>
-                  <th className="px-5 py-3 text-left">이메일</th>
-                  <th className="px-5 py-3 text-left">역할</th>
+                  <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">ID</th>
+                  <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">이름</th>
+                  <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">이메일</th>
+                  <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">역할</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-100">
                 {usersData?.map((u) => {
-                  const role = ROLE_LABEL[u.role] ?? { label: u.role, className: "text-gray-500 bg-gray-100" };
+                  const role = ROLE_DOT[u.role] ?? { label: u.role, dot: "bg-zinc-300" };
                   return (
-                    <tr key={u.userId} className="hover:bg-gray-50 transition">
-                      <td className="px-5 py-3 text-gray-600">{u.userId}</td>
+                    <tr key={u.userId} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-5 py-3 text-zinc-400 tabular-nums">{u.userId}</td>
                       <td className="px-5 py-3 font-medium">{u.name}</td>
-                      <td className="px-5 py-3 text-gray-700">{u.email}</td>
+                      <td className="px-5 py-3 text-zinc-600">{u.email}</td>
                       <td className="px-5 py-3">
-                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${role.className}`}>
-                          {role.label}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`w-1.5 h-1.5 rounded-full ${role.dot}`} />
+                          <span className="text-xs text-zinc-500">{role.label}</span>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -186,37 +194,38 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* ── 타임딜 관리 */}
+      {/* 타임딜 관리 */}
       {tab === "timedeals" && (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div className="bg-white border border-gray-200 overflow-x-auto">
           {dealsLoading ? (
-            <div className="p-8 text-center text-gray-400">불러오는 중...</div>
+            <div className="p-8 text-center text-zinc-400 text-sm">불러오는 중...</div>
           ) : (
             <table className="w-full text-sm min-w-[580px]">
-              <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+              <thead className="bg-gray-50 text-zinc-500 text-xs">
                 <tr>
-                  <th className="px-5 py-3 text-left">상품명</th>
-                  <th className="px-5 py-3 text-left">할인가</th>
-                  <th className="px-5 py-3 text-left">상태</th>
-                  <th className="px-5 py-3 text-left">종료 시간</th>
-                  <th className="px-5 py-3 text-left">액션</th>
+                  <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">상품명</th>
+                  <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">할인가</th>
+                  <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">상태</th>
+                  <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">종료 시간</th>
+                  <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">액션</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
+              <tbody className="divide-y divide-gray-100">
                 {deals.map((deal: any) => {
-                  const status = DEAL_STATUS_LABEL[deal.status] ?? { label: deal.status, className: "text-gray-500 bg-gray-100" };
+                  const s = DEAL_STATUS_DOT[deal.status] ?? { label: deal.status, dot: "bg-zinc-300" };
                   return (
-                    <tr key={deal.timeDealId} className="hover:bg-gray-50 transition">
+                    <tr key={deal.timeDealId} className="hover:bg-gray-50 transition-colors">
                       <td className="px-5 py-3 font-medium">{deal.productName ?? deal.product?.name ?? "-"}</td>
-                      <td className="px-5 py-3 text-sky-500 font-semibold">
+                      <td className="px-5 py-3 font-semibold tabular-nums">
                         {deal.discountPrice?.toLocaleString()}원
                       </td>
                       <td className="px-5 py-3">
-                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${status.className}`}>
-                          {status.label}
-                        </span>
+                        <div className="flex items-center gap-1.5">
+                          <span className={`w-1.5 h-1.5 rounded-full ${s.dot}`} />
+                          <span className="text-xs text-zinc-500">{s.label}</span>
+                        </div>
                       </td>
-                      <td className="px-5 py-3 text-gray-700">
+                      <td className="px-5 py-3 text-zinc-600 text-xs tabular-nums">
                         {deal.endTime ? new Date(deal.endTime).toLocaleString("ko-KR") : "-"}
                       </td>
                       <td className="px-5 py-3">
@@ -228,7 +237,7 @@ export default function AdminPage() {
                               }
                             }}
                             disabled={forceEnd.isPending}
-                            className="text-xs px-3 py-1.5 border border-red-300 text-red-500 rounded-lg hover:bg-red-50 transition disabled:opacity-50"
+                            className="text-xs px-3 py-1.5 border border-gray-300 text-red-400 hover:border-red-400 hover:text-red-600 transition-colors disabled:opacity-40"
                           >
                             강제 종료
                           </button>
@@ -243,30 +252,28 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* ── 대기열 정책 */}
+      {/* 대기열 정책 */}
       {tab === "queue-policies" && (
         <div className="flex flex-col gap-4">
-          {/* 정책 생성 버튼 */}
           <div className="flex justify-end">
             <button
               onClick={() => { setShowCreateForm((v) => !v); setFormError(""); }}
-              className="text-sm px-4 py-2 bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition font-semibold"
+              className="text-sm px-4 py-2 bg-gray-900 text-white font-semibold hover:bg-gray-700 transition-colors"
             >
               {showCreateForm ? "취소" : "+ 정책 생성"}
             </button>
           </div>
 
-          {/* 정책 생성 폼 */}
           {showCreateForm && (
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
-              <h2 className="font-semibold text-gray-700 mb-4">새 대기열 정책</h2>
+            <div className="bg-white border border-gray-200 p-6">
+              <h2 className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-4">새 대기열 정책</h2>
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium mb-1">상품 선택</label>
+                  <label className={labelCls}>상품 선택</label>
                   <select
                     value={form.productId}
                     onChange={(e) => setForm((f) => ({ ...f, productId: e.target.value }))}
-                    className={inputCls + " bg-white"}
+                    className={inputCls}
                   >
                     <option value="">상품을 선택해주세요</option>
                     {products.map((p: any) => (
@@ -278,7 +285,7 @@ export default function AdminPage() {
                 </div>
 
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium mb-1">타임딜 이름</label>
+                  <label className={labelCls}>타임딜 이름</label>
                   <input
                     value={form.dealName}
                     onChange={(e) => setForm((f) => ({ ...f, dealName: e.target.value }))}
@@ -288,11 +295,11 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">초기 상태</label>
+                  <label className={labelCls}>초기 상태</label>
                   <select
                     value={form.status}
                     onChange={(e) => setForm((f) => ({ ...f, status: e.target.value }))}
-                    className={inputCls + " bg-white"}
+                    className={inputCls}
                   >
                     <option value="RUNNING">실행중 (RUNNING)</option>
                     <option value="PAUSED">일시정지 (PAUSED)</option>
@@ -301,7 +308,7 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">최대 허용 인원</label>
+                  <label className={labelCls}>최대 허용 인원</label>
                   <input
                     type="number" min={1}
                     value={form.maxCapacity}
@@ -311,7 +318,7 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">시작 시간</label>
+                  <label className={labelCls}>시작 시간</label>
                   <input
                     type="datetime-local"
                     value={form.startTime}
@@ -321,7 +328,7 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">종료 시간</label>
+                  <label className={labelCls}>종료 시간</label>
                   <input
                     type="datetime-local"
                     value={form.endTime}
@@ -331,7 +338,7 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">활성화 당 허용 인원 (limitSize)</label>
+                  <label className={labelCls}>활성화 당 허용 인원 (limitSize)</label>
                   <input
                     type="number" min={1}
                     value={form.limitSize}
@@ -341,7 +348,7 @@ export default function AdminPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">활성 체크 주기 (queueGap)</label>
+                  <label className={labelCls}>활성 체크 주기 (queueGap)</label>
                   <input
                     type="number" min={1}
                     value={form.queueGap}
@@ -351,7 +358,7 @@ export default function AdminPage() {
                 </div>
 
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium mb-1">토큰 TTL (초, 최소 60)</label>
+                  <label className={labelCls}>토큰 TTL (초, 최소 60)</label>
                   <input
                     type="number" min={60}
                     value={form.ttl}
@@ -361,53 +368,53 @@ export default function AdminPage() {
                 </div>
               </div>
 
-              {formError && <p className="text-red-500 text-sm mt-3">{formError}</p>}
+              {formError && <p className="text-red-500 text-xs mt-3">{formError}</p>}
 
               <button
                 onClick={() => createPolicy.mutate()}
                 disabled={createPolicy.isPending}
-                className="mt-4 w-full py-2.5 bg-sky-500 text-white rounded-xl font-semibold hover:bg-sky-600 transition disabled:opacity-50"
+                className="mt-4 w-full py-2.5 bg-gray-900 text-white text-sm font-semibold hover:bg-gray-700 transition-colors disabled:opacity-40"
               >
                 {createPolicy.isPending ? "생성 중..." : "정책 생성"}
               </button>
             </div>
           )}
 
-          {/* 정책 목록 */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-x-auto">
+          <div className="bg-white border border-gray-200 overflow-x-auto">
             {policiesLoading ? (
-              <div className="p-8 text-center text-gray-400">불러오는 중...</div>
+              <div className="p-8 text-center text-zinc-400 text-sm">불러오는 중...</div>
             ) : (
               <>
                 <table className="w-full text-sm min-w-[640px]">
-                  <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+                  <thead className="bg-gray-50 text-zinc-500 text-xs">
                     <tr>
-                      <th className="px-5 py-3 text-left">타임딜명</th>
-                      <th className="px-5 py-3 text-left">상태</th>
-                      <th className="px-5 py-3 text-left">시작</th>
-                      <th className="px-5 py-3 text-left">종료</th>
-                      <th className="px-5 py-3 text-left">최대 인원</th>
-                      <th className="px-5 py-3 text-left">액션</th>
+                      <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">타임딜명</th>
+                      <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">상태</th>
+                      <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">시작</th>
+                      <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">종료</th>
+                      <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">최대 인원</th>
+                      <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">액션</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-gray-100">
                     {policies.map((p: any) => {
-                      const pStatus = POLICY_STATUS_LABEL[p.status] ?? { label: p.status, className: "text-gray-500 bg-gray-100" };
+                      const ps = POLICY_STATUS_DOT[p.status] ?? { label: p.status, dot: "bg-zinc-300" };
                       return (
-                        <tr key={p.policyId} className="hover:bg-gray-50 transition">
+                        <tr key={p.policyId} className="hover:bg-gray-50 transition-colors">
                           <td className="px-5 py-3 font-medium">{p.timeDealName}</td>
                           <td className="px-5 py-3">
-                            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${pStatus.className}`}>
-                              {pStatus.label}
-                            </span>
+                            <div className="flex items-center gap-1.5">
+                              <span className={`w-1.5 h-1.5 rounded-full ${ps.dot}`} />
+                              <span className="text-xs text-zinc-500">{ps.label}</span>
+                            </div>
                           </td>
-                          <td className="px-5 py-3 text-gray-700">
+                          <td className="px-5 py-3 text-zinc-600 text-xs tabular-nums">
                             {p.startTime ? new Date(p.startTime).toLocaleString("ko-KR") : "-"}
                           </td>
-                          <td className="px-5 py-3 text-gray-700">
+                          <td className="px-5 py-3 text-zinc-600 text-xs tabular-nums">
                             {p.endTime ? new Date(p.endTime).toLocaleString("ko-KR") : "-"}
                           </td>
-                          <td className="px-5 py-3">{p.limitSize}명</td>
+                          <td className="px-5 py-3 text-zinc-600">{p.limitSize}명</td>
                           <td className="px-5 py-3">
                             <button
                               onClick={() => {
@@ -416,7 +423,7 @@ export default function AdminPage() {
                                 }
                               }}
                               disabled={deletePolicy.isPending}
-                              className="text-xs px-3 py-1.5 border border-red-300 text-red-500 rounded-lg hover:bg-red-50 transition disabled:opacity-50"
+                              className="text-xs px-3 py-1.5 border border-gray-300 text-red-400 hover:border-red-400 hover:text-red-600 transition-colors disabled:opacity-40"
                             >
                               삭제
                             </button>
@@ -427,7 +434,7 @@ export default function AdminPage() {
                   </tbody>
                 </table>
                 {policies.length === 0 && (
-                  <div className="p-8 text-center text-gray-400">등록된 대기열 정책이 없습니다</div>
+                  <div className="p-8 text-center text-zinc-400 text-sm">등록된 대기열 정책이 없습니다</div>
                 )}
               </>
             )}
