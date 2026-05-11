@@ -55,7 +55,7 @@ export default function PaymentPage() {
         storeId: process.env.NEXT_PUBLIC_PORTONE_STORE_ID!,
         channelKey: process.env.NEXT_PUBLIC_PORTONE_CHANNEL_KEY!,
         paymentId: portOnePaymentId,
-        orderName: order.items?.[0]?.productSnapshot?.productName ?? "Rush Deal 주문",
+        orderName: order.orderItems?.[0]?.productSnapshot?.productName ?? "Rush Deal 주문",
         totalAmount: order.finalAmount,
         currency: "CURRENCY_KRW",
         payMethod: "CARD",
@@ -85,7 +85,7 @@ export default function PaymentPage() {
 
   if (!order) return <div className="text-center py-20 text-zinc-400 text-sm">주문을 찾을 수 없습니다</div>;
 
-  if (order.status !== "PENDING_PAYMENT") {
+  if (order.orderStatus !== "PENDING_PAYMENT") {
     return (
       <div className="max-w-md mx-auto text-center py-20">
         <p className="text-zinc-400 text-sm mb-4">결제할 수 없는 주문입니다.</p>
@@ -128,10 +128,10 @@ export default function PaymentPage() {
         <div className="p-6 border-b border-gray-100">
           <p className="text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-3">주문 상품</p>
           <div className="flex flex-col gap-2">
-            {order.items?.map((item: any) => (
+            {order.orderItems?.map((item: any) => (
               <div key={item.orderItemId} className="flex justify-between text-sm">
                 <span className="text-zinc-700">
-                  {item.productSnapshot?.productName}
+                  {item.productName}
                   <span className="text-zinc-400 ml-1">× {item.quantity}</span>
                 </span>
                 <span className="font-medium tabular-nums">{item.subtotal?.toLocaleString()}원</span>

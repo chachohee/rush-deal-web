@@ -60,12 +60,12 @@ export default function EditTimeDealPage() {
     if (data) {
       const d = data.timeDeal ?? data.data ?? data;
       reset({
-        title: d.title,
-        description: d.description,
-        discountPrice: d.discountPrice ?? d.price,
-        limitQuantity: d.limitQuantity ?? d.stockQuantity,
-        startAt: d.startAt ? toLocalDatetimeValue(d.startAt) : "",
-        endAt: d.endAt ? toLocalDatetimeValue(d.endAt) : "",
+        title: d.timeDealInfo?.title ?? d.title ?? "",
+        description: d.timeDealInfo?.description ?? d.description ?? "",
+        discountPrice: d.price?.amount ?? d.discountPrice ?? 0,
+        limitQuantity: d.limitQuantity?.quantity ?? d.stockQuantity ?? 1,
+        startAt: (d.period?.startAt ?? d.startAt) ? toLocalDatetimeValue(d.period?.startAt ?? d.startAt) : "",
+        endAt: (d.period?.endAt ?? d.endAt) ? toLocalDatetimeValue(d.period?.endAt ?? d.endAt) : "",
       });
     }
   }, [data, reset]);

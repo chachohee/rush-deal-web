@@ -29,7 +29,8 @@ export default function TimeDealDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const { toast } = useToast();
 
-  const { data: deal, isLoading } = useQuery({
+  // TimeDealDetailResponse: { timeDeal: { id, timeDealInfo:{title,description}, price:{amount}, limitQuantity:{quantity}, period:{startAt,endAt}, status }, timeDealProdutResultList: [{id, productId, productOptionId, timeDealProductStatus}] }
+  const { data: dealData, isLoading } = useQuery({
     queryKey: ["timedeal", id],
     queryFn: async () => {
       const res = await api.get(`/api/v1/timedeals/${id}`);
@@ -55,16 +56,32 @@ export default function TimeDealDetailPage() {
     enabled: !!user,
   });
 
+  // 중첩 구조에서 필드 추출
+  const timeDeal = dealData?.timeDeal;
+  const productList: any[] = dealData?.timeDealProdutResultList ?? [];
+  const firstProduct = productList[0];
+
+  const title: string = timeDeal?.timeDealInfo?.title ?? "";
+  const description: string = timeDeal?.timeDealInfo?.description ?? "";
+  const discountPrice: number = timeDeal?.price?.amount ?? 0;
+  const limitQty: number = timeDeal?.limitQuantity?.quantity ?? 1;
+  const endAt: string = timeDeal?.period?.endAt ?? new Date(Date.now() + 86400000).toISOString();
+  const startAt: string = timeDeal?.period?.startAt ?? "";
+  const status: string = timeDeal?.status ?? "";
+
+  // 큐 진입 및 주문 생성에 필요한 ID
+  const productId: string = firstProduct?.productId?.toString() ?? "";
+  const timeDealStockId: string = firstProduct?.id?.toString() ?? "";
+
+  const isActive = status === "IN_PROGRESS";
+  const isSoldOut = status === "SOLD_OUT";
+
   const pointBalance: number = pointData?.balance ?? pointData?.data?.balance ?? 0;
   const defaultAddress = addresses.find((a) => a.isDefault) ?? addresses[0] ?? null;
-  const isActive = deal?.status === "ACTIVE" || deal?.status === "IN_PROGRESS";
-  const limitQty: number = deal?.limitQuantity ?? 1;
 
-  const countdown = useCountdown(
-    deal?.endAt ?? new Date(Date.now() + 1000 * 60 * 60 * 24).toISOString()
-  );
+  const countdown = useCountdown(endAt);
 
-  const totalPrice: number = (deal?.discountPrice ?? 0) * quantity;
+  const totalPrice: number = discountPrice * quantity;
   const pointUsed = Math.min(
     Math.max(0, parseInt(pointInput || "0", 10) || 0),
     pointBalance,
@@ -74,7 +91,7 @@ export default function TimeDealDetailPage() {
 
   const enterQueue = useMutation({
     mutationFn: async () => {
-      const res = await api.post("/api/v1/queues/enter", { productId: deal.productId });
+      const res = await api.post("/api/v1/queues/enter", { productId });
       return res.data;
     },
     onSuccess: (data) => {
@@ -85,16 +102,16 @@ export default function TimeDealDetailPage() {
     onError: () => toast("대기열 진입에 실패했습니다", "error"),
   });
 
-  // 3초마다 순위 자동 조회, 활성화되면 폴링 중단
+  // 3초마다 순위 자동 조회
   const { data: rankData } = useQuery({
     queryKey: ["queue-rank", id, queueToken],
     queryFn: async () => {
-      const res = await api.get(`/api/v1/queues/rank?productId=${deal?.productId}`, {
+      const res = await api.get(`/api/v1/queues/rank?productId=${productId}`, {
         headers: { "X-Queue-Token": queueToken },
       });
       return res.data;
     },
-    enabled: step === "queue" && !!queueToken && !!deal?.productId,
+    enabled: step === "queue" && !!queueToken && !!productId,
     refetchInterval: (query) => {
       if (query.state.data?.data?.status === "ACTIVE") return false;
       return 3000;
@@ -103,12 +120,12 @@ export default function TimeDealDetailPage() {
 
   const createOrder = useMutation({
     mutationFn: async () => {
-      const timeDealForOrder = await api.get(`/api/v1/timedeals/${id}/order`);
-      const stockId = timeDealForOrder.data.products?.[0]?.timeDealStockId;
       const res = await api.post(
         "/api/v1/orders",
         {
-          items: [{ timeDealStockId: stockId, quantity }],
+          timeDealId: id,
+          productId,
+          orderItems: [{ timeDealStockId, quantity }],
           pointUsed,
           shippingInfo: defaultAddress
             ? {
@@ -132,9 +149,9 @@ export default function TimeDealDetailPage() {
       );
       return res.data;
     },
-    onSuccess: (data) => {
-      toast("주문이 접수되었습니다", "success");
-      router.push(`/orders/${data.data?.orderId ?? data.orderId}`);
+    onSuccess: () => {
+      toast("주문이 접수되었습니다. 주문 내역에서 확인해주세요", "success");
+      router.push("/orders");
     },
     onError: () => toast("주문 생성에 실패했습니다", "error"),
   });
@@ -148,7 +165,7 @@ export default function TimeDealDetailPage() {
     );
   }
 
-  if (!deal) return <div className="text-center py-20 text-zinc-400 text-sm">타임딜을 찾을 수 없습니다</div>;
+  if (!timeDeal) return <div className="text-center py-20 text-zinc-400 text-sm">타임딜을 찾을 수 없습니다</div>;
 
   const pad = (n: number) => String(n).padStart(2, "0");
   const canOrder = rankData?.data?.status === "ACTIVE";
@@ -173,7 +190,7 @@ export default function TimeDealDetailPage() {
             <div className="flex items-center gap-2">
               <span className={`w-1.5 h-1.5 rounded-full ${isActive ? "bg-blue-500" : "bg-zinc-300"}`} />
               <span className="text-xs text-zinc-500 font-medium">
-                {isActive ? "진행중" : deal.status === "SCHEDULED" ? "진행예정" : "종료"}
+                {isActive ? "진행중" : status === "SCHEDULED" ? "진행예정" : isSoldOut ? "품절" : "종료"}
               </span>
             </div>
             {isActive && !countdown.done ? (
@@ -183,17 +200,17 @@ export default function TimeDealDetailPage() {
               </span>
             ) : (
               <span className="text-xs text-zinc-400">
-                {new Date(deal.endAt).toLocaleString("ko-KR")} 마감
+                {new Date(endAt).toLocaleString("ko-KR")} 마감
               </span>
             )}
           </div>
 
-          <h1 className="text-xl font-bold tracking-tight mb-1">{deal.title}</h1>
-          <p className="text-sm text-zinc-500 mb-6 leading-relaxed">{deal.description}</p>
+          <h1 className="text-xl font-bold tracking-tight mb-1">{title}</h1>
+          <p className="text-sm text-zinc-500 mb-6 leading-relaxed">{description}</p>
 
           <div className="flex items-baseline gap-3 pb-6 border-b border-gray-100">
             <span className="text-3xl font-bold tracking-tight">
-              {deal.discountPrice?.toLocaleString()}
+              {discountPrice.toLocaleString()}
               <span className="text-lg font-normal text-zinc-400 ml-0.5">원</span>
             </span>
             <span className="text-xs text-zinc-400">1인 최대 {limitQty}개</span>
@@ -201,7 +218,7 @@ export default function TimeDealDetailPage() {
 
           <div className="pt-6 flex flex-col gap-3">
             {/* 배송지 없음 경고 */}
-            {step === "detail" && isActive && !defaultAddress && user && (
+            {step === "detail" && isActive && !isSoldOut && !defaultAddress && user && (
               <div className="px-4 py-3 border-l-2 border-amber-400 bg-amber-50 text-xs text-amber-700 flex items-center justify-between">
                 <span>기본 배송지가 없습니다</span>
                 <button onClick={() => router.push("/mypage")} className="font-semibold underline">
@@ -211,13 +228,13 @@ export default function TimeDealDetailPage() {
             )}
 
             {/* 대기열 진입 버튼 */}
-            {step === "detail" && isActive && (
+            {step === "detail" && isActive && !isSoldOut && (
               <button
                 onClick={() => {
                   if (!user) { router.push("/login"); return; }
                   enterQueue.mutate();
                 }}
-                disabled={enterQueue.isPending}
+                disabled={enterQueue.isPending || !productId}
                 className="w-full py-3.5 bg-gray-900 text-white text-sm font-semibold tracking-wide hover:bg-gray-700 transition-colors disabled:opacity-40"
               >
                 {enterQueue.isPending ? "진입 중..." : "대기열 진입"}
@@ -313,7 +330,7 @@ export default function TimeDealDetailPage() {
                     {/* 주문 버튼 */}
                     <button
                       onClick={() => createOrder.mutate()}
-                      disabled={createOrder.isPending}
+                      disabled={createOrder.isPending || !timeDealStockId}
                       className="w-full py-3.5 bg-gray-900 text-white text-sm font-semibold hover:bg-gray-700 transition-colors disabled:opacity-40"
                     >
                       {createOrder.isPending
@@ -328,7 +345,7 @@ export default function TimeDealDetailPage() {
             {/* 비활성 상태 */}
             {!isActive && (
               <div className="py-3 text-center text-sm text-zinc-400 bg-gray-50">
-                {deal.status === "SCHEDULED" ? "아직 시작 전입니다" : "종료된 타임딜입니다"}
+                {status === "SCHEDULED" ? `${new Date(startAt).toLocaleString("ko-KR")} 시작 예정` : isSoldOut ? "품절된 타임딜입니다" : "종료된 타임딜입니다"}
               </div>
             )}
           </div>

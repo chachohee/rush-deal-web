@@ -57,9 +57,9 @@ export default function OrdersPage() {
       ) : (
         <div className="flex flex-col gap-px bg-gray-200">
           {orders.map((order: any) => {
-            const s = STATUS[order.status] ?? { label: order.status, dot: "bg-zinc-300" };
-            const itemName = order.items?.[0]?.productSnapshot?.productName ?? "상품";
-            const extraCount = (order.items?.length ?? 1) - 1;
+            const s = STATUS[order.orderStatus] ?? { label: order.orderStatus, dot: "bg-zinc-300" };
+            const itemName = order.firstProductName ?? "상품";
+            const extraCount = (order.itemCount ?? 1) - 1;
             const orderedAt = new Date(order.orderedAt);
 
             return (
@@ -74,9 +74,6 @@ export default function OrdersPage() {
                     </p>
                     <div className="flex items-center gap-2 mt-1">
                       <span className="text-sm font-bold">{order.finalAmount?.toLocaleString()}원</span>
-                      {order.pointUsed > 0 && (
-                        <span className="text-xs text-zinc-400">(포인트 {order.pointUsed?.toLocaleString()}P 사용)</span>
-                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-1.5 shrink-0 pt-0.5">
@@ -85,7 +82,7 @@ export default function OrdersPage() {
                   </div>
                 </Link>
 
-                {order.status === "PENDING_PAYMENT" && (
+                {order.orderStatus === "PENDING_PAYMENT" && (
                   <div className="px-5 pb-4">
                     <button
                       onClick={() => router.push(`/payment/${order.orderId}`)}

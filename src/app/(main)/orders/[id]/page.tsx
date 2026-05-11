@@ -46,6 +46,16 @@ export default function OrderDetailPage() {
     onError: () => toast("구매 확정에 실패했습니다", "error"),
   });
 
+  const refundOrder = useMutation({
+    mutationFn: () => api.post(`/api/v1/orders/${id}/refund`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["order", id] });
+      queryClient.invalidateQueries({ queryKey: ["orders"] });
+      toast("환불이 요청되었습니다", "success");
+    },
+    onError: () => toast("환불 요청에 실패했습니다", "error"),
+  });
+
   if (isLoading) return <div className="max-w-2xl mx-auto h-64 bg-gray-100 animate-pulse" />;
   if (!order) return <div className="text-center py-20 text-zinc-400 text-sm">주문을 찾을 수 없습니다</div>;
 
@@ -58,7 +68,7 @@ export default function OrderDetailPage() {
       <div className="bg-white border border-gray-200">
         <div className="flex items-center justify-between p-6 border-b border-gray-100">
           <h1 className="text-base font-bold tracking-tight">주문 상세</h1>
-          <span className="text-xs font-medium text-zinc-500">{STATUS_LABEL[order.status] ?? order.status}</span>
+          <span className="text-xs font-medium text-zinc-500">{STATUS_LABEL[order.orderStatus] ?? order.orderStatus}</span>
         </div>
 
         <div className="px-6 py-3 border-b border-gray-100">
@@ -66,10 +76,10 @@ export default function OrderDetailPage() {
         </div>
 
         <div className="px-6">
-          {order.items?.map((item: any) => (
+          {order.orderItems?.map((item: any) => (
             <div key={item.orderItemId} className="flex justify-between items-start py-4 border-b border-gray-100 last:border-b-0">
               <div>
-                <p className="text-sm font-medium">{item.productSnapshot?.productName}</p>
+                <p className="text-sm font-medium">{item.productName}</p>
                 <p className="text-xs text-zinc-400 mt-0.5">{item.quantity}개</p>
               </div>
               <p className="text-sm font-semibold tabular-nums">{item.subtotal?.toLocaleString()}원</p>
@@ -105,9 +115,9 @@ export default function OrderDetailPage() {
           </div>
         )}
 
-        {(order.status === "PENDING" || order.status === "PENDING_PAYMENT" || order.status === "PAID") && (
+        {(order.orderStatus === "PENDING" || order.orderStatus === "PENDING_PAYMENT" || order.orderStatus === "PAID" || order.orderStatus === "PURCHASE_CONFIRMED") && (
           <div className="flex gap-2 p-6 border-t border-gray-200">
-            {(order.status === "PENDING" || order.status === "PENDING_PAYMENT") && (
+            {(order.orderStatus === "PENDING" || order.orderStatus === "PENDING_PAYMENT") && (
               <button
                 onClick={() => cancelOrder.mutate()}
                 disabled={cancelOrder.isPending}
@@ -116,7 +126,7 @@ export default function OrderDetailPage() {
                 {cancelOrder.isPending ? "취소 중..." : "주문 취소"}
               </button>
             )}
-            {order.status === "PENDING_PAYMENT" && (
+            {order.orderStatus === "PENDING_PAYMENT" && (
               <button
                 onClick={() => router.push(`/payment/${order.orderId}`)}
                 className="flex-1 py-3 bg-gray-900 text-white text-sm font-semibold hover:bg-gray-700 transition-colors"
@@ -124,13 +134,24 @@ export default function OrderDetailPage() {
                 결제하기
               </button>
             )}
-            {order.status === "PAID" && (
+            {order.orderStatus === "PAID" && (
               <button
                 onClick={() => confirmPurchase.mutate()}
                 disabled={confirmPurchase.isPending}
                 className="flex-1 py-3 bg-gray-900 text-white text-sm font-semibold hover:bg-gray-700 transition-colors disabled:opacity-40"
               >
                 {confirmPurchase.isPending ? "처리 중..." : "구매 확정"}
+              </button>
+            )}
+            {order.orderStatus === "PURCHASE_CONFIRMED" && (
+              <button
+                onClick={() => {
+                  if (confirm("환불을 요청하시겠습니까?")) refundOrder.mutate();
+                }}
+                disabled={refundOrder.isPending}
+                className="flex-1 py-3 border border-gray-300 text-sm font-medium text-zinc-600 hover:border-red-400 hover:text-red-500 transition-colors disabled:opacity-40"
+              >
+                {refundOrder.isPending ? "처리 중..." : "환불 요청"}
               </button>
             )}
           </div>

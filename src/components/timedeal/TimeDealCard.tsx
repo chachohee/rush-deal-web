@@ -72,7 +72,7 @@ export default function TimeDealCard({ deal }: Props) {
         </p>
 
         <p className="text-base font-bold text-gray-900">
-          {deal.discountPrice.toLocaleString()}
+          {(deal.price ?? deal.discountPrice)?.toLocaleString() ?? "0"}
           <span className="text-sm font-normal text-zinc-400 ml-0.5">원</span>
         </p>
       </div>

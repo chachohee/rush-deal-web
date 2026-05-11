@@ -15,9 +15,10 @@ const ROLE_DOT: Record<string, { label: string; dot: string }> = {
 };
 
 const DEAL_STATUS_DOT: Record<string, { label: string; dot: string }> = {
-  SCHEDULED: { label: "예정",   dot: "bg-blue-500" },
-  ACTIVE:    { label: "진행중", dot: "bg-green-500" },
-  ENDED:     { label: "종료됨", dot: "bg-zinc-300" },
+  SCHEDULED:   { label: "예정",   dot: "bg-blue-500" },
+  IN_PROGRESS: { label: "진행중", dot: "bg-green-500" },
+  SOLD_OUT:    { label: "품절",   dot: "bg-yellow-500" },
+  ENDED:       { label: "종료됨", dot: "bg-zinc-300" },
 };
 
 const POLICY_STATUS_DOT: Record<string, { label: string; dot: string }> = {
@@ -217,7 +218,7 @@ export default function AdminPage() {
                     <tr key={deal.timeDealId} className="hover:bg-gray-50 transition-colors">
                       <td className="px-5 py-3 font-medium">{deal.productName ?? deal.product?.name ?? "-"}</td>
                       <td className="px-5 py-3 font-semibold tabular-nums">
-                        {deal.discountPrice?.toLocaleString()}원
+                        {(deal.price ?? deal.discountPrice)?.toLocaleString()}원
                       </td>
                       <td className="px-5 py-3">
                         <div className="flex items-center gap-1.5">
@@ -229,7 +230,7 @@ export default function AdminPage() {
                         {deal.endTime ? new Date(deal.endTime).toLocaleString("ko-KR") : "-"}
                       </td>
                       <td className="px-5 py-3">
-                        {deal.status === "ACTIVE" && (
+                        {deal.status === "IN_PROGRESS" && (
                           <button
                             onClick={() => {
                               if (confirm("타임딜을 강제 종료하시겠습니까?")) {
