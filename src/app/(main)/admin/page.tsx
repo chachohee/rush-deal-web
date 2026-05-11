@@ -92,6 +92,7 @@ export default function AdminPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-timedeals"] });
       queryClient.invalidateQueries({ queryKey: ["timedeals"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-queue-policies"] });
     },
   });
 
