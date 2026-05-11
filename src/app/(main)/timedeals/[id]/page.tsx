@@ -24,7 +24,7 @@ export default function TimeDealDetailPage() {
   const router = useRouter();
   const user = useAuthStore((s) => s.user);
   const [queueToken, setQueueToken] = useState<string | null>(null);
-  const [step, setStep] = useState<"detail" | "queue">("detail");
+  const [step, setStep] = useState<"detail" | "queue" | "ordered">("detail");
   const [pointInput, setPointInput] = useState("");
   const [quantity, setQuantity] = useState(1);
   const { toast } = useToast();
@@ -150,8 +150,7 @@ export default function TimeDealDetailPage() {
       return res.data;
     },
     onSuccess: () => {
-      toast("주문이 접수되었습니다. 주문 내역에서 확인해주세요", "success");
-      router.push("/orders");
+      setStep("ordered");
     },
     onError: () => toast("주문 생성에 실패했습니다", "error"),
   });
@@ -339,6 +338,20 @@ export default function TimeDealDetailPage() {
                     </button>
                   </>
                 )}
+              </div>
+            )}
+
+            {/* 주문 접수 완료 */}
+            {step === "ordered" && (
+              <div className="flex flex-col gap-3 text-center py-4">
+                <p className="text-sm font-semibold text-gray-900">주문이 접수되었습니다</p>
+                <p className="text-xs text-zinc-400">처리 완료까지 잠시 시간이 걸릴 수 있습니다.</p>
+                <button
+                  onClick={() => router.push("/orders")}
+                  className="w-full py-3.5 bg-gray-900 text-white text-sm font-semibold hover:bg-gray-700 transition-colors"
+                >
+                  주문 내역 보기
+                </button>
               </div>
             )}
 
