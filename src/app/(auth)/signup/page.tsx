@@ -6,6 +6,7 @@ import { z } from "zod";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import api from "@/lib/axios";
+import PasswordInput from "@/components/ui/PasswordInput";
 
 const schema = z.object({
   email: z.string().email("올바른 이메일을 입력해주세요"),
@@ -56,7 +57,7 @@ export default function SignupPage() {
           </div>
           <div>
             <label className={labelCls}>비밀번호</label>
-            <input {...register("password")} type="password" placeholder="8자 이상, 특수문자 포함" className={inputCls} />
+            <PasswordInput {...register("password")} placeholder="8자 이상, 특수문자 포함" className={inputCls} />
             {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
           </div>
           <div>

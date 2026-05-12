@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import api from "@/lib/axios";
 import { useAuthStore } from "@/store/authStore";
+import PasswordInput from "@/components/ui/PasswordInput";
 
 const schema = z.object({
   email: z.string().email("올바른 이메일을 입력해주세요"),
@@ -59,7 +60,7 @@ export default function LoginPage() {
           </div>
           <div>
             <label className="block text-xs font-semibold text-zinc-500 uppercase tracking-wider mb-1.5">비밀번호</label>
-            <input {...register("password")} type="password" placeholder="비밀번호" className={inputCls} />
+            <PasswordInput {...register("password")} placeholder="비밀번호" className={inputCls} />
             {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
           </div>
           {errors.root && <p className="text-red-500 text-xs text-center">{errors.root.message}</p>}

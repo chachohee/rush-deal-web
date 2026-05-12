@@ -9,6 +9,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/axios";
 import { useToast } from "@/components/ui/Toast";
+import PasswordInput from "@/components/ui/PasswordInput";
 
 interface ShippingAddress {
   addressId: number;
@@ -239,7 +240,7 @@ export default function MyPage() {
                 <label className={labelCls}>
                   새 비밀번호 <span className="normal-case font-normal text-zinc-400">(변경 시에만 입력)</span>
                 </label>
-                <input {...register("password")} type="password" placeholder="8자 이상" className={inputCls} />
+                <PasswordInput {...register("password")} placeholder="8자 이상" className={inputCls} />
                 {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
               </div>
               <div>
