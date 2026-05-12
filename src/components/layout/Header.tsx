@@ -1,32 +1,21 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useState, useEffect, useRef } from "react";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/axios";
 import ThemeToggle from "@/components/ui/ThemeToggle";
+import SearchBox from "@/components/layout/SearchBox";
 
 export default function Header() {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const { user, clearAuth } = useAuthStore();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [searchTerm, setSearchTerm] = useState("");
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { setMenuOpen(false); }, [pathname]);
-  useEffect(() => {
-    setSearchTerm(pathname === "/search" ? (searchParams.get("q") ?? "") : "");
-  }, [pathname, searchParams]);
-
-  const onSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const q = searchTerm.trim();
-    if (!q) return;
-    router.push(`/search?q=${encodeURIComponent(q)}`);
-  };
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -80,24 +69,7 @@ export default function Header() {
         </nav>
 
         {/* 검색바 */}
-        <form onSubmit={onSearchSubmit} className="hidden md:flex flex-1 max-w-xs relative">
-          <input
-            type="search"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="타임딜 검색"
-            className="w-full text-xs border border-gray-200 px-3 py-2 pr-9 outline-none focus:border-gray-900 transition-colors"
-          />
-          <button
-            type="submit"
-            aria-label="검색"
-            className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-zinc-400 hover:text-gray-900 transition-colors"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-            </svg>
-          </button>
-        </form>
+        <SearchBox variant="desktop" />
 
         {/* 데스크톱 우측 */}
         <div className="hidden md:flex items-center gap-3 shrink-0">
@@ -149,20 +121,7 @@ export default function Header() {
           {menuOpen && (
             <div className="absolute top-14 left-0 right-0 bg-white border-b border-gray-200 z-50">
               <nav className="px-6 py-4 flex flex-col gap-1">
-                <form onSubmit={onSearchSubmit} className="relative mb-3">
-                  <input
-                    type="search"
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="타임딜 검색"
-                    className="w-full text-sm border border-gray-200 px-3 py-2 pr-9 outline-none focus:border-gray-900 transition-colors"
-                  />
-                  <button type="submit" aria-label="검색" className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-zinc-400">
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" />
-                    </svg>
-                  </button>
-                </form>
+                <SearchBox variant="mobile" />
                 {user && (
                   <p className="text-xs text-gray-400 pb-3 border-b border-gray-100 mb-2">
                     {user.name} · {user.role === "MASTER" ? "관리자" : user.role === "SELLER" ? "판매자" : "일반회원"}

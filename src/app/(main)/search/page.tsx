@@ -7,6 +7,13 @@ import TimeDealCard from "@/components/timedeal/TimeDealCard";
 
 const PAGE_SIZE = 12;
 
+const FIELD_LABEL: Record<string, string> = {
+  title: "타임딜명",
+  productName: "상품명",
+  companyName: "회사명",
+  description: "설명",
+};
+
 export default function SearchPage() {
   const searchParams = useSearchParams();
   const q = (searchParams.get("q") ?? "").trim();
@@ -72,9 +79,25 @@ export default function SearchPage() {
       ) : (
         <>
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-px bg-gray-200">
-            {results.map((deal: any) => (
-              <TimeDealCard key={deal.id ?? deal.timeDealId} deal={deal} />
-            ))}
+            {results.map((hit: any) => {
+              const highlights: Record<string, string[]> = hit.highlights ?? {};
+              const matched = Object.entries(highlights).filter(([f]) => f !== "description");
+              return (
+                <div key={hit.id ?? hit.timeDealId} className="bg-white flex flex-col">
+                  <TimeDealCard deal={hit} />
+                  {matched.length > 0 && (
+                    <div className="px-4 py-2 border-t border-gray-100 text-xs text-zinc-500 flex flex-col gap-0.5 [&_mark]:bg-yellow-200 [&_mark]:text-gray-900 [&_mark]:px-0.5">
+                      {matched.map(([field, snippets]) => (
+                        <span key={field} className="truncate">
+                          <span className="text-zinc-400 mr-1.5">{FIELD_LABEL[field] ?? field}</span>
+                          <span dangerouslySetInnerHTML={{ __html: snippets[0] ?? "" }} />
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
 
           {hasNextPage && (
