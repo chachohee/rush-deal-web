@@ -29,15 +29,15 @@ export default function LoginPage() {
     try {
       const res = await api.post("/api/v1/auth/login", data);
       const { accessToken } = res.data as { accessToken: string };
-      localStorage.setItem("accessToken", accessToken);
       const payload = JSON.parse(atob(accessToken.split(".")[1]));
       const role: string = payload.role ?? "";
-      const meRes = await api.get("/api/v1/users/me");
+      const meRes = await api.get("/api/v1/users/me", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
       const { userId, email, name } = meRes.data.data ?? meRes.data;
       setAuth(accessToken, { userId, email, name, role });
       router.push("/timedeals");
     } catch {
-      localStorage.removeItem("accessToken");
       setError("root", { message: "이메일 또는 비밀번호가 올바르지 않습니다" });
     }
   };

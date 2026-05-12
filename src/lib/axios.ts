@@ -12,6 +12,7 @@ const api = axios.create({
 });
 
 api.interceptors.request.use((config) => {
+  if (config.headers.Authorization) return config;
   const token = useAuthStore.getState().accessToken;
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
