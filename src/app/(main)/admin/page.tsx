@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/axios";
 
@@ -229,6 +229,33 @@ export default function AdminPage() {
     },
     enabled: panel?.type === "timedeals" && !!panel?.data?.id,
   });
+
+  // 패널 상품 목록의 상품 정보 조회 (중복 productId 제거)
+  const panelProductIds = useMemo<string[]>(() => {
+    if (panel?.type !== "timedeals") return [];
+    const list: { productId: string }[] = panelDealDetail?.timeDealProdutResultList ?? [];
+    return Array.from(new Set(list.map((p) => p.productId)));
+  }, [panelDealDetail, panel?.type]);
+
+  const panelProductQueries = useQueries({
+    queries: panelProductIds.map((id) => ({
+      queryKey: ["panel-product-detail", id],
+      queryFn: async () => {
+        const res = await api.get(`/api/v1/products/${id}`);
+        return res.data;
+      },
+      enabled: !!id,
+    })),
+  });
+
+  const panelProductMap = useMemo<Record<string, any>>(() => {
+    const map: Record<string, any> = {};
+    panelProductIds.forEach((id, idx) => {
+      const data = panelProductQueries[idx]?.data;
+      if (data) map[id] = data;
+    });
+    return map;
+  }, [panelProductIds, panelProductQueries]);
 
   useEffect(() => {
     if (!selectedDealDetail) return;
@@ -807,12 +834,36 @@ export default function AdminPage() {
                         <p className="text-xs text-zinc-400">상품 정보 없음</p>
                       ) : (
                         <div className="flex flex-col gap-1">
-                          {products.map((p: any, i: number) => (
-                            <div key={i} className="text-xs text-zinc-600 bg-gray-50 px-3 py-2 border border-gray-100">
-                              <span className="text-zinc-400 mr-2">상품 ID</span>
-                              <span className="tabular-nums font-mono">{p.productId}</span>
-                            </div>
-                          ))}
+                          {products.map((p: any, i: number) => {
+                            const product = panelProductMap[p.productId];
+                            const option = product?.productOptionsResult?.find(
+                              (o: any) => o.optionId === p.productOptionId
+                            );
+                            const optionLabel = option
+                              ? [option.size, option.color].filter(Boolean).join(" / ")
+                              : null;
+                            const isSoldOut = p.timeDealProductStatus === "OUT_OF_STOCK";
+                            return (
+                              <div key={i} className="text-xs bg-gray-50 px-3 py-2 border border-gray-100 flex items-center justify-between gap-2">
+                                <div className="min-w-0 flex-1">
+                                  {product ? (
+                                    <>
+                                      <div className="font-medium text-gray-900 truncate">{product.productName}</div>
+                                      <div className="text-zinc-400 mt-0.5 truncate">
+                                        {product.companyName}
+                                        {optionLabel && <span className="ml-2">· {optionLabel}</span>}
+                                      </div>
+                                    </>
+                                  ) : (
+                                    <span className="text-zinc-400">상품 정보 불러오는 중...</span>
+                                  )}
+                                </div>
+                                <span className={`shrink-0 text-xs font-semibold ${isSoldOut ? "text-red-500" : "text-green-600"}`}>
+                                  {isSoldOut ? "품절" : "판매중"}
+                                </span>
+                              </div>
+                            );
+                          })}
                         </div>
                       )}
                     </div>
