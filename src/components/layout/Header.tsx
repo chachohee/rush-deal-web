@@ -7,6 +7,7 @@ import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/axios";
 import ThemeToggle from "@/components/ui/ThemeToggle";
 import SearchBox from "@/components/layout/SearchBox";
+import NotificationBell from "@/components/notification/NotificationBell";
 
 export default function Header() {
   const router = useRouter();
@@ -73,6 +74,7 @@ export default function Header() {
 
         {/* 데스크톱 우측 */}
         <div className="hidden md:flex items-center gap-3 shrink-0">
+          <NotificationBell />
           <ThemeToggle />
           {user ? (
             <>
@@ -101,6 +103,7 @@ export default function Header() {
 
         {/* 모바일 우측 */}
         <div className="flex md:hidden items-center gap-1" ref={menuRef}>
+          <NotificationBell />
           <ThemeToggle />
           <button
             onClick={() => setMenuOpen((v) => !v)}
