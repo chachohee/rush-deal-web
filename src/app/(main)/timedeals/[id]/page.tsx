@@ -69,6 +69,7 @@ export default function TimeDealDetailPage() {
   const endAt: string = timeDeal?.period?.endAt ?? new Date(Date.now() + 86400000).toISOString();
   const startAt: string = timeDeal?.period?.startAt ?? "";
   const status: string = timeDeal?.status ?? "";
+  const imageUrl: string | null = timeDeal?.imageUrl ?? null;
 
   // 큐 진입 및 주문 생성에 필요한 ID
   const productId: string = firstProduct?.productId?.toString() ?? "";
@@ -180,8 +181,12 @@ export default function TimeDealDetailPage() {
       </button>
 
       <div className="bg-white border border-gray-200">
-        <div className="aspect-video bg-gray-50 flex items-center justify-center">
-          <span className="text-6xl select-none">⏰</span>
+        <div className="aspect-video bg-gray-50 flex items-center justify-center overflow-hidden">
+          {imageUrl ? (
+            <img src={imageUrl} alt={title} className="w-full h-full object-cover" />
+          ) : (
+            <span className="text-6xl select-none">⏰</span>
+          )}
         </div>
 
         <div className="p-6">

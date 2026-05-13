@@ -75,6 +75,7 @@ export default function SellerProductsPage() {
           <table className="w-full text-sm min-w-[600px]">
             <thead className="bg-gray-50 text-zinc-500 text-xs">
               <tr>
+                <th className="px-3 py-3 text-left font-semibold uppercase tracking-wider w-16">이미지</th>
                 <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">상품명</th>
                 <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">회사명</th>
                 <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">가격</th>
@@ -85,6 +86,15 @@ export default function SellerProductsPage() {
             <tbody className="divide-y divide-gray-100">
               {products.map((p: any) => (
                 <tr key={p.productId} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-3 py-2">
+                    <div className="w-12 h-12 bg-gray-50 overflow-hidden flex items-center justify-center">
+                      {p.imageUrl ? (
+                        <img src={p.imageUrl} alt={p.productName} className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-zinc-300 text-lg">·</span>
+                      )}
+                    </div>
+                  </td>
                   <td className="px-5 py-3 font-medium">{p.productName}</td>
                   <td className="px-5 py-3 text-zinc-600">{p.companyName}</td>
                   <td className="px-5 py-3 font-semibold tabular-nums">

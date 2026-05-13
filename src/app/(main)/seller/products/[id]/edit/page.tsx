@@ -2,12 +2,13 @@
 
 import { useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { useForm } from "react-hook-form";
+import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/axios";
+import ImageUploader from "@/components/common/ImageUploader";
 
 const CATEGORIES = ["CLOTHES", "SHOES", "BAG", "HEADWEAR", "ACCESSORY", "UNDERWEAR"] as const;
 const CATEGORY_LABEL: Record<string, string> = {
@@ -21,6 +22,7 @@ const schema = z.object({
   description: z.string().min(1, "상품 설명을 입력해주세요"),
   price: z.number().min(0, "가격을 입력해주세요"),
   category: z.enum(CATEGORIES),
+  imageUrl: z.string().optional(),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -49,6 +51,7 @@ export default function EditProductPage() {
 
   const {
     register,
+    control,
     handleSubmit,
     reset,
     formState: { errors, isSubmitting },
@@ -64,6 +67,7 @@ export default function EditProductPage() {
         description: p.description,
         price: p.price,
         category: p.category,
+        imageUrl: p.imageUrl ?? "",
       });
     }
   }, [product, reset]);
@@ -89,6 +93,19 @@ export default function EditProductPage() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-px bg-gray-200">
         <div className="bg-white p-6 flex flex-col gap-4">
+          <div>
+            <label className={labelCls}>상품 이미지</label>
+            <div className="max-w-xs">
+              <Controller
+                control={control}
+                name="imageUrl"
+                render={({ field }) => (
+                  <ImageUploader value={field.value} onChange={field.onChange} />
+                )}
+              />
+            </div>
+          </div>
+
           <div>
             <label className={labelCls}>회사명</label>
             <input {...register("companyName")} className={inputCls} />

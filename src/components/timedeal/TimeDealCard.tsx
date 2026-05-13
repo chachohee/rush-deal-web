@@ -35,6 +35,7 @@ interface Props {
     status: string;
     startAt: string;
     endAt: string;
+    imageUrl?: string | null;
   };
 }
 
@@ -48,9 +49,12 @@ export default function TimeDealCard({ deal }: Props) {
     <div className={`group bg-white border border-gray-200 flex flex-col transition-all duration-200 ${
       isClickable ? "hover:border-gray-400 cursor-pointer" : "opacity-50"
     }`}>
-      {/* 이미지 플레이스홀더 */}
       <div className="aspect-square bg-gray-50 flex items-center justify-center relative overflow-hidden">
-        <span className="text-4xl select-none">⏰</span>
+        {deal.imageUrl ? (
+          <img src={deal.imageUrl} alt={deal.title} className="w-full h-full object-cover" />
+        ) : (
+          <span className="text-4xl select-none">⏰</span>
+        )}
         {!isEnded && dealId && (
           <div className="absolute top-1 right-1 bg-white/80 rounded-full">
             <InterestToggle timeDealId={dealId} />
