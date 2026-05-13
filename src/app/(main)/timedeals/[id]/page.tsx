@@ -97,7 +97,9 @@ export default function TimeDealDetailPage() {
       return res.data;
     },
     onSuccess: (data) => {
-      setQueueToken(data.data?.tokenId ?? data.tokenId);
+      // 응답: { success, data: { token, productId, rank, status, enteredAt, message } }
+      const token = data?.data?.token ?? data?.token;
+      setQueueToken(token);
       setStep("queue");
       toast("대기열에 진입했습니다", "success");
     },
