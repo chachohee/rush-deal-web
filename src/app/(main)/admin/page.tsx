@@ -7,7 +7,14 @@ import { useQuery, useQueries, useMutation, useQueryClient } from "@tanstack/rea
 import { useAuthStore } from "@/store/authStore";
 import api from "@/lib/axios";
 
-type Tab = "users" | "timedeals" | "queue-policies" | "products";
+type Tab = "users" | "timedeals" | "queue-policies" | "products" | "audit-logs";
+
+const AUDIT_ACTION_LABEL: Record<string, string> = {
+  ROLE_CHANGED: "역할 변경",
+  BLOCKED: "정지",
+  UNBLOCKED: "정지 해제",
+  DELETED: "삭제",
+};
 
 const ROLE_DOT: Record<string, { label: string; dot: string }> = {
   USER:   { label: "일반회원", dot: "bg-zinc-300" },
@@ -119,12 +126,16 @@ export default function AdminPage() {
   const changeRole = useMutation({
     mutationFn: ({ id, role }: { id: number; role: string }) =>
       api.patch(`/api/v1/users/${id}/role?role=${role}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["admin-users"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-audit-logs"] });
+    },
   });
   const blockUser = useMutation({
     mutationFn: (id: number) => api.patch(`/api/v1/users/${id}/block`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-audit-logs"] });
       setPanel((p) => p ? { ...p, data: { ...p.data, isBlocked: true } } : null);
     },
   });
@@ -132,6 +143,7 @@ export default function AdminPage() {
     mutationFn: (id: number) => api.patch(`/api/v1/users/${id}/unblock`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-audit-logs"] });
       setPanel((p) => p ? { ...p, data: { ...p.data, isBlocked: false } } : null);
     },
   });
@@ -139,6 +151,7 @@ export default function AdminPage() {
     mutationFn: (id: number) => api.delete(`/api/v1/users/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-users"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-audit-logs"] });
       setPanel(null);
     },
   });
@@ -151,6 +164,15 @@ export default function AdminPage() {
       return res.data;
     },
     enabled: tab === "products" && user?.role === "MASTER",
+  });
+
+  const { data: auditData, isLoading: auditLoading } = useQuery({
+    queryKey: ["admin-audit-logs"],
+    queryFn: async () => {
+      const res = await api.get("/api/v1/users/audit-logs?size=50");
+      return res.data;
+    },
+    enabled: tab === "audit-logs" && user?.role === "MASTER",
   });
   const disableProduct = useMutation({
     mutationFn: (id: string) => api.post(`/api/v1/products/${id}/disable`),
@@ -348,6 +370,7 @@ export default function AdminPage() {
     timedeals: "타임딜 관리",
     "queue-policies": "대기열 정책",
     products: "상품 관리",
+    "audit-logs": "감사 로그",
   };
 
   return (
@@ -355,7 +378,7 @@ export default function AdminPage() {
       <h1 className="text-2xl font-bold tracking-tight mb-6">관리자 페이지</h1>
 
       <div className="flex gap-0 mb-6 border-b border-gray-200">
-        {(["users", "timedeals", "queue-policies", "products"] as Tab[]).map((t) => (
+        {(["users", "timedeals", "queue-policies", "products", "audit-logs"] as Tab[]).map((t) => (
           <button
             key={t}
             onClick={() => switchTab(t)}
@@ -700,6 +723,49 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      {/* 감사 로그 */}
+      {tab === "audit-logs" && (() => {
+        const logs: any[] = auditData?.content ?? auditData?.data?.content ?? [];
+        return (
+          <div className="bg-white border border-gray-200 overflow-x-auto">
+            {auditLoading ? (
+              <div className="p-8 text-center text-zinc-400 text-sm">불러오는 중...</div>
+            ) : logs.length === 0 ? (
+              <div className="p-8 text-center text-zinc-400 text-sm">기록된 감사 로그가 없습니다</div>
+            ) : (
+              <table className="w-full text-sm min-w-[640px]">
+                <thead className="bg-gray-50 text-zinc-500 text-xs">
+                  <tr>
+                    <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">시간</th>
+                    <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">관리자 ID</th>
+                    <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">액션</th>
+                    <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">대상 유저 ID</th>
+                    <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">상세</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {logs.map((log: any) => (
+                    <tr key={log.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-5 py-3 text-zinc-600 text-xs tabular-nums">
+                        {new Date(log.createdAt).toLocaleString("ko-KR")}
+                      </td>
+                      <td className="px-5 py-3 text-zinc-500 tabular-nums">{log.adminId}</td>
+                      <td className="px-5 py-3">
+                        <span className="text-xs font-semibold text-gray-900">
+                          {AUDIT_ACTION_LABEL[log.action] ?? log.action}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-zinc-500 tabular-nums">{log.targetUserId}</td>
+                      <td className="px-5 py-3 text-zinc-600 text-xs">{log.details ?? "-"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        );
+      })()}
 
       {/* 백드롭 */}
       {panel && (
