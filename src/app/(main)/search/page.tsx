@@ -69,7 +69,7 @@ export default function SearchPage() {
       {!q ? (
         <div className="text-center text-zinc-400 py-24 text-sm">검색어를 입력해주세요</div>
       ) : isLoading ? (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-px bg-gray-200">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
           {Array.from({ length: PAGE_SIZE }).map((_, i) => (
             <div key={i} className="aspect-square bg-gray-100 animate-pulse" />
           ))}
@@ -78,15 +78,15 @@ export default function SearchPage() {
         <div className="text-center text-zinc-400 py-24 text-sm">검색 결과가 없습니다</div>
       ) : (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-px bg-gray-200">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {results.map((hit: any) => {
               const highlights: Record<string, string[]> = hit.highlights ?? {};
               const matched = Object.entries(highlights).filter(([f]) => f !== "description");
               return (
-                <div key={hit.id ?? hit.timeDealId} className="bg-white flex flex-col">
+                <div key={hit.id ?? hit.timeDealId} className="flex flex-col">
                   <TimeDealCard deal={hit} />
                   {matched.length > 0 && (
-                    <div className="px-4 py-2 border-t border-gray-100 text-xs text-zinc-500 flex flex-col gap-0.5 [&_mark]:bg-yellow-200 [&_mark]:text-gray-900 [&_mark]:px-0.5">
+                    <div className="px-4 py-2 -mt-px border border-t-0 border-gray-200 bg-white text-xs text-zinc-500 flex flex-col gap-0.5 [&_mark]:bg-yellow-200 [&_mark]:text-gray-900 [&_mark]:px-0.5">
                       {matched.map(([field, snippets]) => (
                         <span key={field} className="truncate">
                           <span className="text-zinc-400 mr-1.5">{FIELD_LABEL[field] ?? field}</span>
