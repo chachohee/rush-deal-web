@@ -77,8 +77,14 @@ export default function AdminPage() {
   const [formError, setFormError] = useState("");
   const [selectedTimeDealId, setSelectedTimeDealId] = useState<string>("");
   const [selectedTimeDealStatus, setSelectedTimeDealStatus] = useState<string>("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [auditActionFilter, setAuditActionFilter] = useState("");
+  // 검색 입력 상태 (사용자가 입력 중)
+  const [searchInput, setSearchInput] = useState("");
+  const [searchField, setSearchField] = useState("");
+  const [dateFromInput, setDateFromInput] = useState("");
+  const [dateToInput, setDateToInput] = useState("");
+  const [auditActionInput, setAuditActionInput] = useState("");
+  // 적용된 검색 (검색 버튼 클릭 시 반영)
+  const [applied, setApplied] = useState({ q: "", field: "", from: "", to: "", action: "" });
   const queryClient = useQueryClient();
 
   // 패널 상태
@@ -99,8 +105,31 @@ export default function AdminPage() {
   function switchTab(t: Tab) {
     setTab(t);
     setPanel(null);
-    setSearchQuery("");
-    setAuditActionFilter("");
+    setSearchInput("");
+    setSearchField("");
+    setDateFromInput("");
+    setDateToInput("");
+    setAuditActionInput("");
+    setApplied({ q: "", field: "", from: "", to: "", action: "" });
+  }
+
+  function applySearch() {
+    setApplied({
+      q: searchInput.trim().toLowerCase(),
+      field: searchField,
+      from: dateFromInput,
+      to: dateToInput,
+      action: auditActionInput,
+    });
+  }
+
+  function resetSearch() {
+    setSearchInput("");
+    setSearchField("");
+    setDateFromInput("");
+    setDateToInput("");
+    setAuditActionInput("");
+    setApplied({ q: "", field: "", from: "", to: "", action: "" });
   }
 
   // 패널에 유저가 선택되면 역할 초기화
@@ -171,10 +200,10 @@ export default function AdminPage() {
   });
 
   const { data: auditData, isLoading: auditLoading } = useQuery({
-    queryKey: ["admin-audit-logs", auditActionFilter],
+    queryKey: ["admin-audit-logs", applied.action],
     queryFn: async () => {
       const params = new URLSearchParams({ size: "50" });
-      if (auditActionFilter) params.set("action", auditActionFilter);
+      if (applied.action) params.set("action", applied.action);
       const res = await api.get(`/api/v1/users/audit-logs?${params}`);
       return res.data;
     },
@@ -371,24 +400,115 @@ export default function AdminPage() {
 
   const products = productsData?.content ?? productsData?.data?.content ?? [];
 
-  const q = searchQuery.trim().toLowerCase();
-  const includesQ = (s: any) => typeof s === "string" && s.toLowerCase().includes(q);
-  const filteredUsers = q
-    ? (usersData ?? []).filter((u: any) => includesQ(u.name) || includesQ(u.email))
-    : (usersData ?? []);
-  const filteredDeals = q
-    ? deals.filter((d: any) => includesQ(d.title))
-    : deals;
-  const filteredPolicies = q
-    ? policies.filter((p: any) => includesQ(p.timeDealName))
-    : policies;
-  const filteredProducts = q
-    ? products.filter((p: any) => includesQ(p.productName) || includesQ(p.companyName) || includesQ(p.category))
-    : products;
+  const { q: appliedQ, field: appliedField, from: appliedFrom, to: appliedTo } = applied;
+  const fromTime = appliedFrom ? new Date(appliedFrom).getTime() : null;
+  const toTime = appliedTo ? new Date(appliedTo + "T23:59:59").getTime() : null;
+  const matchText = (val: any) => typeof val === "string" && val.toLowerCase().includes(appliedQ);
+  const inDateRange = (iso: string | undefined) => {
+    if (!iso) return !(fromTime || toTime);
+    const t = new Date(iso).getTime();
+    if (fromTime && t < fromTime) return false;
+    if (toTime && t > toTime) return false;
+    return true;
+  };
+  const allUsers = (usersData ?? []) as any[];
+  const filteredUsers = allUsers.filter((u: any) => {
+    if (appliedQ) {
+      if (appliedField === "name") { if (!matchText(u.name)) return false; }
+      else if (appliedField === "email") { if (!matchText(u.email)) return false; }
+      else if (appliedField === "role") { if (!matchText(u.role)) return false; }
+      else if (!matchText(u.name) && !matchText(u.email) && !matchText(u.role)) return false;
+    }
+    if (fromTime || toTime) {
+      if (!inDateRange(u.createdAt)) return false;
+    }
+    return true;
+  });
+  const filteredDeals = deals.filter((d: any) => {
+    if (appliedQ) {
+      if (appliedField === "title") { if (!matchText(d.title)) return false; }
+      else if (appliedField === "description") { if (!matchText(d.description)) return false; }
+      else if (appliedField === "status") { if (!matchText(d.status)) return false; }
+      else if (!matchText(d.title) && !matchText(d.description) && !matchText(d.status)) return false;
+    }
+    if (fromTime || toTime) {
+      if (!inDateRange(d.startAt) && !inDateRange(d.endAt)) return false;
+    }
+    return true;
+  });
+  const filteredPolicies = policies.filter((p: any) => {
+    if (appliedQ) {
+      if (appliedField === "timeDealName") { if (!matchText(p.timeDealName)) return false; }
+      else if (appliedField === "status") { if (!matchText(p.status)) return false; }
+      else if (!matchText(p.timeDealName) && !matchText(p.status)) return false;
+    }
+    if (fromTime || toTime) {
+      if (!inDateRange(p.startTime) && !inDateRange(p.endTime)) return false;
+    }
+    return true;
+  });
+  const filteredProducts = products.filter((p: any) => {
+    if (appliedQ) {
+      if (appliedField === "productName") { if (!matchText(p.productName)) return false; }
+      else if (appliedField === "companyName") { if (!matchText(p.companyName)) return false; }
+      else if (appliedField === "category") { if (!matchText(p.category)) return false; }
+      else if (!matchText(p.productName) && !matchText(p.companyName) && !matchText(p.category)) return false;
+    }
+    return true;
+  });
   const auditLogs: any[] = auditData?.content ?? auditData?.data?.content ?? [];
-  const filteredAuditLogs = q
-    ? auditLogs.filter((l: any) => includesQ(l.adminEmail) || includesQ(l.targetEmail) || includesQ(l.details))
-    : auditLogs;
+  const filteredAuditLogs = auditLogs.filter((l: any) => {
+    if (appliedQ) {
+      if (appliedField === "adminEmail") { if (!matchText(l.adminEmail)) return false; }
+      else if (appliedField === "targetEmail") { if (!matchText(l.targetEmail)) return false; }
+      else if (appliedField === "details") { if (!matchText(l.details)) return false; }
+      else if (!matchText(l.adminEmail) && !matchText(l.targetEmail) && !matchText(l.details)) return false;
+    }
+    if (fromTime || toTime) {
+      if (!inDateRange(l.createdAt)) return false;
+    }
+    return true;
+  });
+
+  const SEARCH_FIELDS: Record<Tab, { value: string; label: string }[]> = {
+    users: [
+      { value: "", label: "전체" },
+      { value: "name", label: "이름" },
+      { value: "email", label: "이메일" },
+      { value: "role", label: "역할" },
+    ],
+    timedeals: [
+      { value: "", label: "전체" },
+      { value: "title", label: "제목" },
+      { value: "description", label: "설명" },
+      { value: "status", label: "상태" },
+    ],
+    "queue-policies": [
+      { value: "", label: "전체" },
+      { value: "timeDealName", label: "타임딜명" },
+      { value: "status", label: "상태" },
+    ],
+    products: [
+      { value: "", label: "전체" },
+      { value: "productName", label: "상품명" },
+      { value: "companyName", label: "회사명" },
+      { value: "category", label: "카테고리" },
+    ],
+    "audit-logs": [
+      { value: "", label: "전체" },
+      { value: "adminEmail", label: "관리자 이메일" },
+      { value: "targetEmail", label: "대상 이메일" },
+      { value: "details", label: "상세" },
+    ],
+  };
+
+  const DATE_RANGE_SUPPORTED: Record<Tab, boolean> = {
+    users: true,
+    timedeals: true,
+    "queue-policies": true,
+    products: false,
+    "audit-logs": true,
+  };
 
   const TAB_LABELS: Record<Tab, string> = {
     users: "유저 관리",
@@ -419,25 +539,48 @@ export default function AdminPage() {
       </div>
 
       {/* 검색바 */}
-      <div className="flex items-center gap-2 mb-4">
+      <form
+        onSubmit={(e) => { e.preventDefault(); applySearch(); }}
+        className="flex flex-wrap items-center gap-2 mb-4"
+      >
+        <select
+          value={searchField}
+          onChange={(e) => setSearchField(e.target.value)}
+          className="text-sm border border-gray-200 px-3 py-2 outline-none focus:border-gray-900 bg-white"
+        >
+          {SEARCH_FIELDS[tab].map((f) => (
+            <option key={f.value} value={f.value}>{f.label}</option>
+          ))}
+        </select>
         <input
           type="search"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder={
-            tab === "users" ? "이름 또는 이메일 검색" :
-            tab === "timedeals" ? "타임딜명 검색" :
-            tab === "queue-policies" ? "타임딜명 검색" :
-            tab === "products" ? "상품명·회사명·카테고리 검색" :
-            "관리자/대상 이메일·상세 검색"
-          }
-          className="flex-1 max-w-md text-sm border border-gray-200 px-3 py-2 outline-none focus:border-gray-900 transition-colors"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder="검색어"
+          className="flex-1 min-w-[160px] max-w-md text-sm border border-gray-200 px-3 py-2 outline-none focus:border-gray-900"
         />
+        {DATE_RANGE_SUPPORTED[tab] && (
+          <>
+            <input
+              type="date"
+              value={dateFromInput}
+              onChange={(e) => setDateFromInput(e.target.value)}
+              className="text-sm border border-gray-200 px-2 py-2 outline-none focus:border-gray-900 bg-white"
+            />
+            <span className="text-xs text-zinc-400">~</span>
+            <input
+              type="date"
+              value={dateToInput}
+              onChange={(e) => setDateToInput(e.target.value)}
+              className="text-sm border border-gray-200 px-2 py-2 outline-none focus:border-gray-900 bg-white"
+            />
+          </>
+        )}
         {tab === "audit-logs" && (
           <select
-            value={auditActionFilter}
-            onChange={(e) => setAuditActionFilter(e.target.value)}
-            className="text-sm border border-gray-200 px-3 py-2 outline-none focus:border-gray-900 transition-colors bg-white"
+            value={auditActionInput}
+            onChange={(e) => setAuditActionInput(e.target.value)}
+            className="text-sm border border-gray-200 px-3 py-2 outline-none focus:border-gray-900 bg-white"
           >
             <option value="">전체 액션</option>
             <option value="ROLE_CHANGED">역할 변경</option>
@@ -446,7 +589,20 @@ export default function AdminPage() {
             <option value="DELETED">삭제</option>
           </select>
         )}
-      </div>
+        <button
+          type="submit"
+          className="text-sm font-semibold px-4 py-2 bg-gray-900 text-white hover:bg-gray-700 transition-colors"
+        >
+          검색
+        </button>
+        <button
+          type="button"
+          onClick={resetSearch}
+          className="text-sm font-medium px-3 py-2 border border-gray-300 text-zinc-600 hover:border-gray-900 hover:text-gray-900 transition-colors"
+        >
+          초기화
+        </button>
+      </form>
 
       {/* 유저 관리 */}
       {tab === "users" && (
@@ -454,19 +610,26 @@ export default function AdminPage() {
           {usersLoading ? (
             <div className="p-8 text-center text-zinc-400 text-sm">불러오는 중...</div>
           ) : (
-            <table className="w-full text-sm min-w-[480px]">
+            <table className="w-full text-sm min-w-[640px]">
               <thead className="bg-gray-50 text-zinc-500 text-xs">
                 <tr>
                   <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">ID</th>
                   <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">이름</th>
                   <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">이메일</th>
                   <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">역할</th>
+                  <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">상태</th>
+                  <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">가입일</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
                 {filteredUsers.map((u: any) => {
                   const role = ROLE_DOT[u.role] ?? { label: u.role, dot: "bg-zinc-300" };
                   const isSelected = panel?.type === "users" && panel.data.userId === u.userId;
+                  const statusLabel = u.isDeleted
+                    ? { text: "삭제됨", color: "text-zinc-400", dot: "bg-zinc-300" }
+                    : u.isBlocked
+                      ? { text: "정지", color: "text-red-500", dot: "bg-red-400" }
+                      : { text: "정상", color: "text-green-600", dot: "bg-green-500" };
                   return (
                     <tr
                       key={u.userId}
@@ -481,6 +644,15 @@ export default function AdminPage() {
                           <span className={`w-1.5 h-1.5 rounded-full ${role.dot}`} />
                           <span className="text-xs text-zinc-500">{role.label}</span>
                         </div>
+                      </td>
+                      <td className="px-5 py-3">
+                        <div className="flex items-center gap-1.5">
+                          <span className={`w-1.5 h-1.5 rounded-full ${statusLabel.dot}`} />
+                          <span className={`text-xs font-semibold ${statusLabel.color}`}>{statusLabel.text}</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-3 text-zinc-500 text-xs tabular-nums">
+                        {u.createdAt ? new Date(u.createdAt).toLocaleDateString("ko-KR") : "-"}
                       </td>
                     </tr>
                   );
@@ -736,7 +908,7 @@ export default function AdminPage() {
             {productsLoading ? (
               <div className="p-8 text-center text-zinc-400 text-sm">불러오는 중...</div>
             ) : filteredProducts.length === 0 ? (
-              <div className="p-8 text-center text-zinc-400 text-sm">{q ? "검색 결과가 없습니다" : "등록된 상품이 없습니다"}</div>
+              <div className="p-8 text-center text-zinc-400 text-sm">{appliedQ ? "검색 결과가 없습니다" : "등록된 상품이 없습니다"}</div>
             ) : (
               <table className="w-full text-sm min-w-[600px]">
                 <thead className="bg-gray-50 text-zinc-500 text-xs">
@@ -785,7 +957,7 @@ export default function AdminPage() {
             {auditLoading ? (
               <div className="p-8 text-center text-zinc-400 text-sm">불러오는 중...</div>
             ) : filteredAuditLogs.length === 0 ? (
-              <div className="p-8 text-center text-zinc-400 text-sm">{q || auditActionFilter ? "검색 결과가 없습니다" : "기록된 감사 로그가 없습니다"}</div>
+              <div className="p-8 text-center text-zinc-400 text-sm">{appliedQ || applied.action || appliedFrom || appliedTo ? "검색 결과가 없습니다" : "기록된 감사 로그가 없습니다"}</div>
             ) : (
               <table className="w-full text-sm min-w-[700px]">
                 <thead className="bg-gray-50 text-zinc-500 text-xs">
