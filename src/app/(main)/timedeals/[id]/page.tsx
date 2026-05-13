@@ -7,6 +7,7 @@ import api from "@/lib/axios";
 import { useAuthStore } from "@/store/authStore";
 import { useCountdown } from "@/hooks/useCountdown";
 import { useToast } from "@/components/ui/Toast";
+import InterestToggle from "@/components/timedeal/InterestToggle";
 
 interface ShippingAddress {
   addressId: number;
@@ -204,7 +205,10 @@ export default function TimeDealDetailPage() {
             )}
           </div>
 
-          <h1 className="text-xl font-bold tracking-tight mb-1">{title}</h1>
+          <div className="flex items-start justify-between gap-3 mb-1">
+            <h1 className="text-xl font-bold tracking-tight">{title}</h1>
+            <InterestToggle timeDealId={id} size="md" />
+          </div>
           <p className="text-sm text-zinc-500 mb-6 leading-relaxed">{description}</p>
 
           <div className="flex items-baseline gap-3 pb-6 border-b border-gray-100">

@@ -34,6 +34,7 @@ export default function Header() {
 
   const navLinks = [
     { href: "/timedeals",       label: "TIMEDEAL",   show: true },
+    { href: "/interested",      label: "관심",        show: !!user },
     { href: "/orders",          label: "주문 내역",   show: !!user },
     { href: "/mypage",          label: "마이페이지",  show: !!user },
     { href: "/seller/products", label: "상품관리",    show: user?.role === "SELLER" },

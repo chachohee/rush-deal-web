@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCountdown } from "@/hooks/useCountdown";
+import InterestToggle from "@/components/timedeal/InterestToggle";
 
 const STATUS_STYLE: Record<string, { label: string; dot: string }> = {
   ACTIVE:      { label: "진행중",   dot: "bg-blue-500" },
@@ -50,6 +51,11 @@ export default function TimeDealCard({ deal }: Props) {
       {/* 이미지 플레이스홀더 */}
       <div className="aspect-square bg-gray-50 flex items-center justify-center relative overflow-hidden">
         <span className="text-4xl select-none">⏰</span>
+        {!isEnded && dealId && (
+          <div className="absolute top-1 right-1 bg-white/80 rounded-full">
+            <InterestToggle timeDealId={dealId} />
+          </div>
+        )}
         {isEnded && (
           <div className="absolute inset-0 bg-white/60 flex items-center justify-center">
             <span className="text-xs font-bold tracking-widest text-zinc-400 uppercase">{status.label}</span>
