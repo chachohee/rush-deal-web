@@ -77,6 +77,8 @@ export default function AdminPage() {
   const [formError, setFormError] = useState("");
   const [selectedTimeDealId, setSelectedTimeDealId] = useState<string>("");
   const [selectedTimeDealStatus, setSelectedTimeDealStatus] = useState<string>("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [auditActionFilter, setAuditActionFilter] = useState("");
   const queryClient = useQueryClient();
 
   // 패널 상태
@@ -97,6 +99,8 @@ export default function AdminPage() {
   function switchTab(t: Tab) {
     setTab(t);
     setPanel(null);
+    setSearchQuery("");
+    setAuditActionFilter("");
   }
 
   // 패널에 유저가 선택되면 역할 초기화
@@ -167,9 +171,11 @@ export default function AdminPage() {
   });
 
   const { data: auditData, isLoading: auditLoading } = useQuery({
-    queryKey: ["admin-audit-logs"],
+    queryKey: ["admin-audit-logs", auditActionFilter],
     queryFn: async () => {
-      const res = await api.get("/api/v1/users/audit-logs?size=50");
+      const params = new URLSearchParams({ size: "50" });
+      if (auditActionFilter) params.set("action", auditActionFilter);
+      const res = await api.get(`/api/v1/users/audit-logs?${params}`);
       return res.data;
     },
     enabled: tab === "audit-logs" && user?.role === "MASTER",
@@ -365,6 +371,25 @@ export default function AdminPage() {
 
   const products = productsData?.content ?? productsData?.data?.content ?? [];
 
+  const q = searchQuery.trim().toLowerCase();
+  const includesQ = (s: any) => typeof s === "string" && s.toLowerCase().includes(q);
+  const filteredUsers = q
+    ? (usersData ?? []).filter((u: any) => includesQ(u.name) || includesQ(u.email))
+    : (usersData ?? []);
+  const filteredDeals = q
+    ? deals.filter((d: any) => includesQ(d.title))
+    : deals;
+  const filteredPolicies = q
+    ? policies.filter((p: any) => includesQ(p.timeDealName))
+    : policies;
+  const filteredProducts = q
+    ? products.filter((p: any) => includesQ(p.productName) || includesQ(p.companyName) || includesQ(p.category))
+    : products;
+  const auditLogs: any[] = auditData?.content ?? auditData?.data?.content ?? [];
+  const filteredAuditLogs = q
+    ? auditLogs.filter((l: any) => includesQ(l.adminEmail) || includesQ(l.targetEmail) || includesQ(l.details))
+    : auditLogs;
+
   const TAB_LABELS: Record<Tab, string> = {
     users: "유저 관리",
     timedeals: "타임딜 관리",
@@ -393,6 +418,36 @@ export default function AdminPage() {
         ))}
       </div>
 
+      {/* 검색바 */}
+      <div className="flex items-center gap-2 mb-4">
+        <input
+          type="search"
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder={
+            tab === "users" ? "이름 또는 이메일 검색" :
+            tab === "timedeals" ? "타임딜명 검색" :
+            tab === "queue-policies" ? "타임딜명 검색" :
+            tab === "products" ? "상품명·회사명·카테고리 검색" :
+            "관리자/대상 이메일·상세 검색"
+          }
+          className="flex-1 max-w-md text-sm border border-gray-200 px-3 py-2 outline-none focus:border-gray-900 transition-colors"
+        />
+        {tab === "audit-logs" && (
+          <select
+            value={auditActionFilter}
+            onChange={(e) => setAuditActionFilter(e.target.value)}
+            className="text-sm border border-gray-200 px-3 py-2 outline-none focus:border-gray-900 transition-colors bg-white"
+          >
+            <option value="">전체 액션</option>
+            <option value="ROLE_CHANGED">역할 변경</option>
+            <option value="BLOCKED">정지</option>
+            <option value="UNBLOCKED">정지 해제</option>
+            <option value="DELETED">삭제</option>
+          </select>
+        )}
+      </div>
+
       {/* 유저 관리 */}
       {tab === "users" && (
         <div className="bg-white border border-gray-200 overflow-x-auto">
@@ -409,7 +464,7 @@ export default function AdminPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {usersData?.map((u) => {
+                {filteredUsers.map((u: any) => {
                   const role = ROLE_DOT[u.role] ?? { label: u.role, dot: "bg-zinc-300" };
                   const isSelected = panel?.type === "users" && panel.data.userId === u.userId;
                   return (
@@ -462,7 +517,7 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {deals.map((deal: any) => {
+                  {filteredDeals.map((deal: any) => {
                     const s = DEAL_STATUS_DOT[deal.status] ?? { label: deal.status, dot: "bg-zinc-300" };
                     const isSelected = panel?.type === "timedeals" && panel.data.id === deal.id;
                     return (
@@ -631,7 +686,7 @@ export default function AdminPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
-                    {policies.map((p: any) => {
+                    {filteredPolicies.map((p: any) => {
                       const ps = POLICY_STATUS_DOT[p.status] ?? { label: p.status, dot: "bg-zinc-300" };
                       const isSelected = panel?.type === "queue-policies" && panel.data.policyId === p.policyId;
                       return (
@@ -660,7 +715,7 @@ export default function AdminPage() {
                     })}
                   </tbody>
                 </table>
-                {policies.length === 0 && (
+                {filteredPolicies.length === 0 && (
                   <div className="p-8 text-center text-zinc-400 text-sm">등록된 대기열 정책이 없습니다</div>
                 )}
               </>
@@ -680,8 +735,8 @@ export default function AdminPage() {
           <div className="bg-white border border-gray-200 overflow-x-auto">
             {productsLoading ? (
               <div className="p-8 text-center text-zinc-400 text-sm">불러오는 중...</div>
-            ) : products.length === 0 ? (
-              <div className="p-8 text-center text-zinc-400 text-sm">등록된 상품이 없습니다</div>
+            ) : filteredProducts.length === 0 ? (
+              <div className="p-8 text-center text-zinc-400 text-sm">{q ? "검색 결과가 없습니다" : "등록된 상품이 없습니다"}</div>
             ) : (
               <table className="w-full text-sm min-w-[600px]">
                 <thead className="bg-gray-50 text-zinc-500 text-xs">
@@ -694,7 +749,7 @@ export default function AdminPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {products.map((p: any) => (
+                  {filteredProducts.map((p: any) => (
                     <tr key={p.productId} className="hover:bg-gray-50 transition-colors">
                       <td className="px-5 py-3 font-medium">{p.productName}</td>
                       <td className="px-5 py-3 text-zinc-600">{p.companyName}</td>
@@ -725,38 +780,42 @@ export default function AdminPage() {
       )}
 
       {/* 감사 로그 */}
-      {tab === "audit-logs" && (() => {
-        const logs: any[] = auditData?.content ?? auditData?.data?.content ?? [];
-        return (
+      {tab === "audit-logs" && (
           <div className="bg-white border border-gray-200 overflow-x-auto">
             {auditLoading ? (
               <div className="p-8 text-center text-zinc-400 text-sm">불러오는 중...</div>
-            ) : logs.length === 0 ? (
-              <div className="p-8 text-center text-zinc-400 text-sm">기록된 감사 로그가 없습니다</div>
+            ) : filteredAuditLogs.length === 0 ? (
+              <div className="p-8 text-center text-zinc-400 text-sm">{q || auditActionFilter ? "검색 결과가 없습니다" : "기록된 감사 로그가 없습니다"}</div>
             ) : (
-              <table className="w-full text-sm min-w-[640px]">
+              <table className="w-full text-sm min-w-[700px]">
                 <thead className="bg-gray-50 text-zinc-500 text-xs">
                   <tr>
                     <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">시간</th>
-                    <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">관리자 ID</th>
+                    <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">관리자</th>
                     <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">액션</th>
-                    <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">대상 유저 ID</th>
+                    <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">대상 유저</th>
                     <th className="px-5 py-3 text-left font-semibold uppercase tracking-wider">상세</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {logs.map((log: any) => (
+                  {filteredAuditLogs.map((log: any) => (
                     <tr key={log.id} className="hover:bg-gray-50 transition-colors">
                       <td className="px-5 py-3 text-zinc-600 text-xs tabular-nums">
                         {new Date(log.createdAt).toLocaleString("ko-KR")}
                       </td>
-                      <td className="px-5 py-3 text-zinc-500 tabular-nums">{log.adminId}</td>
+                      <td className="px-5 py-3">
+                        <div className="text-sm">{log.adminEmail ?? "-"}</div>
+                        <div className="text-xs text-zinc-400 tabular-nums">#{log.adminId}</div>
+                      </td>
                       <td className="px-5 py-3">
                         <span className="text-xs font-semibold text-gray-900">
                           {AUDIT_ACTION_LABEL[log.action] ?? log.action}
                         </span>
                       </td>
-                      <td className="px-5 py-3 text-zinc-500 tabular-nums">{log.targetUserId}</td>
+                      <td className="px-5 py-3">
+                        <div className="text-sm">{log.targetEmail ?? "-"}</div>
+                        <div className="text-xs text-zinc-400 tabular-nums">#{log.targetUserId}</div>
+                      </td>
                       <td className="px-5 py-3 text-zinc-600 text-xs">{log.details ?? "-"}</td>
                     </tr>
                   ))}
@@ -764,8 +823,7 @@ export default function AdminPage() {
               </table>
             )}
           </div>
-        );
-      })()}
+      )}
 
       {/* 백드롭 */}
       {panel && (
