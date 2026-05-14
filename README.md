@@ -28,14 +28,16 @@
 |------|------|
 | 대기열 | Redis Sorted Set 기반 대기 순위 확인 → 활성화 시 주문 |
 | 주문 | 주문 목록·상세 조회, 취소 및 구매확정 |
+| 결제 | PortOne 결제창 연동 (`/payment/[orderId]`). 포인트 차감 후 잔액 기준으로 결제 금액 확정 |
 | 마이페이지 | 프로필 조회·수정, 비밀번호 변경(보기 토글), 배송지 관리(추가·수정·삭제·기본 설정), 보유 포인트 |
 | 관심 타임딜 | 카드 하트 아이콘으로 토글(optimistic update), `/interested`에서 관심 목록 확인 |
-| 실시간 알림 | 헤더 종 아이콘 + 미읽음 배지. STOMP WebSocket으로 즉시 푸시(주문 접수·결제 완료·취소·계정 변경·타임딜 시작·종료 임박·매진 등 14종) |
+| 실시간 알림 | 헤더 종 아이콘 + 미읽음 배지. STOMP WebSocket으로 즉시 푸시(주문 접수·결제 완료·구매확정·취소·계정 변경·타임딜 시작·종료 임박·매진 등 15종) |
 
 ### 판매자 (SELLER)
 | 기능 | 설명 |
 |------|------|
-| 상품 관리 | 상품 등록·수정·비활성화·삭제 (사이즈/색상 옵션 포함) |
+| 셀러 대시보드 | `/seller` — 진행중·예정·마감 타임딜 KPI, 누적·7일 매출 및 주문 집계, 재고 부족(10개 미만) 경보, 최근 타임딜·상품 5개 |
+| 상품 관리 | 상품 등록·수정·비활성화·삭제 (사이즈/색상 옵션 포함). MinIO 기반 이미지 업로드 (`ImageUploader` 컴포넌트) |
 | 타임딜 관리 | 타임딜 등록·수정 (SCHEDULED 상태만 수정 가능) |
 | 셀러 알림 | 본인 타임딜 시작·종료 임박·매진을 알림으로 수신 |
 
@@ -80,12 +82,16 @@ src/
 │       ├── search/               # 검색 결과 페이지 (하이라이트 + 매칭 필드 표시)
 │       ├── interested/           # 내가 관심 등록한 타임딜
 │       ├── orders/               # 주문 목록 · 상세
+│       ├── payment/[orderId]/    # PortOne 결제 페이지
 │       ├── mypage/               # 마이페이지 (프로필 · 배송지 · 포인트)
 │       ├── admin/                # 관리자 페이지 (탭: 유저·타임딜·정책·상품·감사 로그)
 │       └── seller/
+│           ├── page.tsx          # 셀러 대시보드 (KPI · 매출 · 재고 부족 · 최근 타임딜·상품)
 │           ├── products/         # 상품 등록 · 수정
 │           └── timedeals/        # 타임딜 등록 · 수정
 ├── components/
+│   ├── common/
+│   │   └── ImageUploader.tsx     # MinIO 이미지 업로드 (상품 등록 폼에서 사용)
 │   ├── layout/
 │   │   ├── Header.tsx            # 로고·네비·검색바·알림·테마·로그인
 │   │   └── SearchBox.tsx         # 검색 입력 + 자동완성 드롭다운
@@ -149,6 +155,7 @@ npm run dev
 - **구독 채널**: `/user/queue/notifications` (서버가 사용자별로 라우팅)
 - **반영 방식**: 새 알림 수신 시 React Query 캐시를 invalidate해 카운트 배지 + 드롭다운 즉시 갱신
 - **폴백**: WS 미연결 시에도 60초마다 미읽음 카운트를 자동 새로고침
+- **알림 종류 (15종)**: ORDER_CREATED · ORDER_PAID · ORDER_PURCHASE_CONFIRMED · ORDER_CANCELED · PAYMENT_FAILED · TIMEDEAL_STARTED · TIMEDEAL_ENDING_SOON · TIMEDEAL_SOLD_OUT · TIMEDEAL_ENDED · SELLER_TIMEDEAL_STARTED · SELLER_TIMEDEAL_ENDED · SELLER_TIMEDEAL_SOLD_OUT · ACCOUNT_BLOCKED · ACCOUNT_UNBLOCKED · ROLE_CHANGED
 
 ## 🔍 검색
 
